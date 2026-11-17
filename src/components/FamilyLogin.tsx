@@ -60,7 +60,7 @@ export function FamilyLogin({ mailReady }: { mailReady: boolean }) {
   return (
     <main className="family-auth-page">
       <div className="family-auth-card">
-        <FamilyBrand />
+        <FamilyBrand fullNavigation />
         <span className="eyebrow">EEN PLEK VOOR DE FAMILIE</span>
         <h1>
           {step === 'invite'

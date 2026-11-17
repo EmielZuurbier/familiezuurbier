@@ -19,12 +19,9 @@ export function FamilyUnavailable({ kind }: { kind: 'private' | 'setup' | 'error
       <span className="eyebrow">{familyBrand.name.toUpperCase()}</span>
       <h1>{title}</h1>
       <p>{description}</p>
-      <Link className="primary" href={kind === 'private' ? '/inloggen' : '/admin'}>
+      <a className="primary" href={kind === 'private' ? '/inloggen' : '/admin'}>
         {kind === 'private' ? 'Inloggen bij de familie →' : 'Inloggen bij het beheer →'}
-      </Link>
-      <p>
-        <Link href="/voorbeeld">Bekijk de fictieve voorbeeldstamboom →</Link>
-      </p>
+      </a>
       {kind === 'private' && (
         <p>
           <Link href="/admin">Inloggen als beheerder →</Link>

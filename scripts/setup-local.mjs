@@ -7,7 +7,7 @@ if (existsSync('.env')) {
   const secret = randomBytes(32).toString('hex')
   writeFileSync(
     '.env',
-    `FAMILY_DATA_MODE=demo\nDATABASE_URL=postgresql://familieboom:${password}@127.0.0.1:54329/familieboom\nPOSTGRES_PASSWORD=${password}\nPAYLOAD_SECRET=${secret}\nNEXT_PUBLIC_SERVER_URL=http://localhost:3000\n`,
+    `DATABASE_URL=postgresql://familieboom:${password}@127.0.0.1:54329/familieboom\nPOSTGRES_PASSWORD=${password}\nPAYLOAD_SECRET=${secret}\nNEXT_PUBLIC_SERVER_URL=http://localhost:3000\n`,
     { mode: 0o600, flag: 'wx' },
   )
   console.log(

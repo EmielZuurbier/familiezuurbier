@@ -27,7 +27,7 @@ export default async function Page({ params, searchParams }: Args) {
           Ververs deze pagina nadat het account is aangemaakt. Daarna beheer je hier personen en
           familiebanden.
         </p>
-        <Link href="/">← Bekijk de voorbeeldstamboom</Link>
+        <Link href="/">← Bekijk de stamboom</Link>
       </section>
     )
   return RootPage({ config, params, searchParams, importMap })

@@ -23,12 +23,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           }}
         >
           <h1>Beheer instellen</h1>
-          <p>
-            De voorbeeldstamboom werkt al. Voor beheer zijn PostgreSQL, een geheime sleutel en een
-            eerste beheerder nodig.
-          </p>
+          <p>Voor beheer zijn PostgreSQL, een geheime sleutel en een eerste beheerder nodig.</p>
           <p>Volg de lokale installatie in README.md in de projectmap.</p>
-          <Link href="/">← Terug naar de voorbeeldstamboom</Link>
+          <Link href="/">← Terug naar de stamboom</Link>
         </body>
       </html>
     )

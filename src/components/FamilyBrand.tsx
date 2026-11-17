@@ -2,13 +2,15 @@ import Link from 'next/link'
 import { GitBranch } from 'lucide-react'
 import { familyBrand } from '@/lib/branding'
 
-export function FamilyBrand({ href = '/' }: { href?: string }) {
-  return (
-    <Link
-      className="brand"
-      href={href}
-      aria-label={`Stamboom van de familie ${familyBrand.surname}`}
-    >
+export function FamilyBrand({
+  href = '/',
+  fullNavigation = false,
+}: {
+  href?: string
+  fullNavigation?: boolean
+}) {
+  const content = (
+    <>
       <span className="brand-icon">
         <GitBranch size={23} />
       </span>
@@ -18,6 +20,18 @@ export function FamilyBrand({ href = '/' }: { href?: string }) {
         </span>
         <small>{familyBrand.name}</small>
       </span>
+    </>
+  )
+  const label = `Stamboom van de familie ${familyBrand.surname}`
+  if (fullNavigation)
+    return (
+      <a className="brand" href={href} aria-label={label}>
+        {content}
+      </a>
+    )
+  return (
+    <Link className="brand" href={href} aria-label={label}>
+      {content}
     </Link>
   )
 }

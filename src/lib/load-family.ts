@@ -5,6 +5,7 @@ import { effectiveParentages } from './relations'
 import { databaseConfigured } from './settings'
 import type { Family } from './types'
 import { personPhoto } from './person-photo'
+import type { Payload } from 'payload'
 export type FamilyResult =
   | {
       kind: 'ready'
@@ -14,14 +15,34 @@ export type FamilyResult =
       viewer?: 'administrator' | 'family'
     }
   | { kind: 'private' | 'setup' | 'error' }
-export async function loadFamily(): Promise<FamilyResult> {
-  if (process.env.FAMILY_DATA_MODE !== 'database')
-    return { kind: 'ready', family: demoFamily, demo: true, persistent: false }
+async function familyStorage(): Promise<
+  { kind: 'empty' | 'setup' | 'error' } | { kind: 'filled'; payload: Payload }
+> {
+  // A fresh installation may show examples. A configured but unavailable
+  // database must never silently fall back to a different family.
+  if (!process.env.DATABASE_URL) return { kind: 'empty' }
   if (!databaseConfigured()) return { kind: 'setup' }
   try {
     const { getPayload } = await import('payload'),
       config = await import('@payload-config')
     const payload = await getPayload({ config: config.default })
+    const { totalDocs } = await payload.count({ collection: 'people', overrideAccess: true })
+    return totalDocs === 0 ? { kind: 'empty' } : { kind: 'filled', payload }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+export async function examplesAvailable(): Promise<boolean> {
+  return (await familyStorage()).kind === 'empty'
+}
+export async function loadFamily(): Promise<FamilyResult> {
+  const storage = await familyStorage()
+  if (storage.kind === 'empty')
+    return { kind: 'ready', family: demoFamily, demo: true, persistent: false }
+  if (storage.kind === 'setup' || storage.kind === 'error') return { kind: storage.kind }
+  if (storage.kind !== 'filled') return { kind: 'error' }
+  try {
+    const { payload } = storage
     const { user } = await payload.auth({ headers: await headers() })
     if (
       !user ||

@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { LogOut, Users } from 'lucide-react'
 export type FamilyViewer = 'administrator' | 'family'
 export function FamilyAccountControls({ viewer }: { viewer?: FamilyViewer }) {
@@ -35,10 +34,10 @@ export function FamilyAccountControls({ viewer }: { viewer?: FamilyViewer }) {
   }, [viewer])
   if (viewer === 'administrator')
     return (
-      <Link className="admin-link family-access-link" href="/toegang">
+      <a className="admin-link family-access-link" href="/toegang">
         <Users size={16} />
         Familietoegang beheren
-      </Link>
+      </a>
     )
   if (viewer !== 'family') return null
   return (

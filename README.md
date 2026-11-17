@@ -1,6 +1,6 @@
 # Familieboom · Familie Zuurbier
 
-Een besloten stamboomwebsite voor de **familie Zuurbier**. De app tekent personen, partnerschappen en ouderschap als een interactief schema. De losse voorbeeldweergaven bevatten uitsluitend **fictieve** personen en verbindingen.
+Een besloten stamboomwebsite voor de **familie Zuurbier**. De app tekent personen, partnerschappen en ouderschap als een interactief schema. Voorbeeldgegevens zijn uitsluitend beschikbaar zolang er geen personen in de database staan, of wanneer er nog geen database is ingesteld.
 
 De familienaam komt terug bij het logo, in de opgeslagen weergaven, op het inlogscherm, in het beheer, in de paginatitels en in de e-mailteksten. De vormgeving gebruikt `src/lib/branding.ts` en `FamilyBrand.tsx`. Het [hostingadvies en de featurevoorstellen van 17 november 2026](docs/hostingadvies-2026-11-17.md) beschrijven een volgende stap; de applicatie is nog niet online gepubliceerd en er is nog geen hosting ingericht.
 
@@ -17,17 +17,15 @@ npm run dev
 
 Gebruik de Node-versie uit `.nvmrc`. Zonder lokale instellingen opent de app uitsluitend fictieve voorbeelden. Voor eigen opslag volg je hieronder **Schone installatie**. Wachtwoorden, `.env`, uploads, databaseback-ups, privé-importen en lokale controlescreenshots worden niet in Git opgenomen. Een nieuwe checkout bevat dus geen echte familiegegevens of foto's.
 
-## Nieuw ontwerp om te beoordelen
+## Voorbeeldgegevens en eigen invoer
 
-De stamboom op `/` en `/voorbeeld` reserveert horizontale ruimte per gezinstak: kinderen staan onder hun eigen ouders, zodat ongelijke gezinsgroottes niet de hele generatie naar het midden trekken. Naamkaarten blijven uit elkaar en verbindingen van dezelfde ouders ontmoeten elkaar tussen de generaties. De goedgekeurde muisbediening blijft behouden.
+De applicatie controleert bij ieder verzoek of er personen zijn opgeslagen. Bij een lege database verschijnen de vaste fictieve voorbeelden, zonder die in de database op te slaan. Zodra de eerste persoon is toegevoegd, gebruikt de app uitsluitend de opgeslagen gegevens en is inloggen verplicht. Een oude instelling `FAMILY_DATA_MODE=demo` kan dit niet omzeilen en is niet meer nodig.
 
-De lossere opwaartse indeling staat apart op **<http://127.0.0.1:3000/voorvertoning>**, uitsluitend met fictieve voorbeeldpersonen. Dat opwaartse ontwerp is niet als standaard op de opgeslagen familie toegepast.
+De routes `/voorbeeld` en `/voorvertoning`, inclusief hun kaarten, kalenders en subpagina's, controleren dezelfde voorwaarde. Bij een gevulde database geven ze 404. De verwijzing naar een voorbeeldstamboom staat niet meer bij het inloggen. Bij een databasefout of onvolledige databaseconfiguratie wordt geen voorbeeldstamboom als vervanging getoond.
 
-In de voorvertoning begint de stamgeneratie onderaan. Kinderen en verdere generaties waaieren erboven uit. Elke tak krijgt eigen ruimte; partnergroepen blijven bij elkaar. Gebogen ouder-kindlijnen ontmoeten elkaar bij een gedeeld punt wanneer dezelfde vastgelegde ouders meerdere kinderen hebben. Lange partnerlijnen lopen buiten tussenliggende kaarten om. Ouderschap zonder partnerschap blijft apart zichtbaar. Het gedeelde punt leidt geen nieuwe partnerschappen of familiebanden af.
+In **Overzichtelijk** krijgen gezinnen eigen horizontale ruimte; in **Vrije boom** groeien takken omhoog en spreiden grote groepen zich over meerdere hoogtes. Beide indelingen zijn beschikbaar voor de eigen familie.
 
-De voorvertoning opent bij de stam met context erboven. **Naar de stam** brengt je daar terug; het bestaande overzichtspictogram toont nog steeds de hele familie. De goedgekeurde muisbediening is behouden. De telefoon gebruikt dezelfde opstelling en hetzelfde detailpaneel.
-
-Ontwerpcontroles in ontwikkeling: `/voorvertoning/controle`. Met `?variant=classic` controleert dezelfde browserproef de bestaande fictieve indeling op `/voorbeeld`. Beide controlepagina's veranderen geen opgeslagen gegevens en zijn in productie uitgeschakeld.
+Ontwerpcontroles in ontwikkeling: `/voorvertoning/controle`, uitsluitend als voorbeelden nog beschikbaar zijn. `/interaction-check` controleert de gewone homepage met de bestaande toegangscontrole. De browsercontroles veranderen geen opgeslagen gegevens en zijn in productie uitgeschakeld.
 
 De lokale fotoanalyse staat afzonderlijk in de genegeerde map `.local-import/`, buiten de website en voorbeeldgegevens. Dit is een privévoorstel ter controle, geen uitgevoerde import.
 
@@ -36,7 +34,7 @@ De lokale fotoanalyse staat afzonderlijk in de genegeerde map `.local-import/`, 
 - Stamboom: <http://127.0.0.1:3000>
 - Verjaardagskalender: <http://127.0.0.1:3000/verjaardagen>
 - Beheer: <http://127.0.0.1:3000/admin>
-- Altijd een fictief voorbeeld zonder inloggen: <http://127.0.0.1:3000/voorbeeld>
+- Alleen bij een lege database: fictieve voorbeelden op <http://127.0.0.1:3000/voorbeeld>
 - Het lokale ontwikkelaccount staat in **`.local-admin.txt`** in deze projectmap. Dit privébestand staat buiten versiebeheer. Het wachtwoord staat niet in deze handleiding of de broncode.
 
 De lokale database en geheime sleutels zijn al aangemaakt in de genegeerde `.env`. De database is gestart met een opgeslagen fictieve proefstamboom met 16 personen, 18 ouder-kindrelaties en 6 partnerschappen. Het ontwikkelaccount is lokaal aangemaakt en het inloggen is gecontroleerd. Je kunt daarnaast je eigen beheeraccount aanmaken in het beheer. Bestaande accounts en eigen invoer blijven behouden. Echte gegevens worden standaard uitsluitend na beheerlogin getoond. Er is niets gepubliceerd.
@@ -76,7 +74,7 @@ De drie weergaven gebruiken dezelfde kop met navigatie, dezelfde zijbalkbreedte 
 
 ## Familie op de kaart
 
-Met **Kaart** naast **Stamboom** open je de Mapbox-weergave. De opgeslagen familiekaart staat op `/kaart` en gebruikt dezelfde toegang als de stamboom. `/voorbeeld/kaart` en `/voorvertoning/kaart` bevatten altijd uitsluitend fictieve personen met voorbeeldwoonplaatsen.
+Met **Kaart** naast **Stamboom** open je de Mapbox-weergave. De opgeslagen familiekaart staat op `/kaart` en gebruikt dezelfde toegang als de stamboom. `/voorbeeld/kaart` en `/voorvertoning/kaart` zijn alleen bij een lege database beschikbaar en bevatten uitsluitend fictieve personen met voorbeeldwoonplaatsen.
 
 - Vul **Huidige woonplaats** bij een persoon in als `Haarlem, Nederland`. Daarna opent/ververst de kaart met deze woonplaats. Er wordt geen woonplaats afgeleid uit geboorteplaats of familiebanden.
 - Een stip bundelt de personen in een woonplaats. Klik op de stip om de bijbehorende groep te vinden, of zoek op naam, geboortenaam of woonplaats. Klik op een persoon voor dezelfde persoonsgegevens als in de stamboom.
@@ -91,7 +89,7 @@ De openbare voorbeeldkaart is in de browser gecontroleerd: 13 fictieve personen 
 
 ## Verjaardagskalender
 
-Naast **Stamboom** en **Kaart** staat **Verjaardagskalender**. `/verjaardagen` gebruikt dezelfde afgeschermde familiegegevens en toegang als de andere weergaven. `/voorbeeld/verjaardagen` en `/voorvertoning/verjaardagen` bevatten uitsluitend fictieve personen en verzonnen geboortedatums.
+Naast **Stamboom** en **Kaart** staat **Verjaardagskalender**. `/verjaardagen` gebruikt dezelfde afgeschermde familiegegevens en toegang als de andere weergaven. `/voorbeeld/verjaardagen` en `/voorvertoning/verjaardagen` zijn alleen bij een lege database beschikbaar en bevatten uitsluitend fictieve personen en verzonnen geboortedatums.
 
 De kalender groepeert op maand en dag en toont de geboortedatum en de leeftijd die iemand in het gekozen kalenderjaar bereikt. Je kunt zoeken, een maand kiezen, de levensstatus filteren en het kalenderjaar wisselen. Een klik opent de gewone persoonsgegevens. De datum van vandaag volgt de tijdzone Europe/Amsterdam.
 
@@ -164,7 +162,7 @@ npm run dev
 
 Het project bundelt ook Node 24.22.3 voor de npm-scripts. Bij installeren vanuit een oudere systeem-Node kan npm een enginewaarschuwing geven; gebruik bij voorkeur eerst `nvm use`.
 
-Zonder `.env` of database opent `/` veilig met uitsluitend de vaste fictieve voorbeelden. `/admin` legt dan uit dat beheer nog ingesteld moet worden. Deze voorbeeldmodus slaat geen wijzigingen op. `/voorbeeld` toont altijd uitsluitend vaste fictieve gegevens, ongeacht de database.
+Zonder database-instellingen opent `/` met uitsluitend de vaste fictieve voorbeelden. Een verbonden lege database toont dezelfde voorbeelden. `/admin` legt zo nodig uit dat beheer nog ingesteld moet worden. De voorbeelden slaan geen wijzigingen op en verdwijnen automatisch zodra er eigen personen zijn opgeslagen.
 
 Voor echte lokale opslag:
 
@@ -176,13 +174,7 @@ npm run admin:create
 
 `setup:local` schrijft alleen wanneer `.env` nog niet bestaat. Het genereert een willekeurig databasewachtwoord en geheime Payload-sleutel zonder die te tonen. Het overschrijft geen instellingen of bestaande database. `.env.example` beschrijft de instellingen zonder geheimen. Kies met `admin:create` interactief je eigen naam, e-mail en wachtwoord van minimaal 14 tekens. Het wachtwoord wordt verborgen ingevoerd. Deze opdracht maakt uitsluitend de eerste beheerder aan; volgende beheerders voeg je ingelogd in het beheer toe. De eerste accountregistratie via een anonieme webaanvraag is expliciet geblokkeerd.
 
-Zet daarna in `.env`:
-
-```dotenv
-FAMILY_DATA_MODE=database
-```
-
-Herstart `npm run dev`. In ontwikkelmodus maakt Payload het databaseschema aan en past het schemawijzigingen toe. Het voorbeeld van 16 personen kun je **optioneel in een lege familiedatabase** opslaan met:
+Herstart `npm run dev`. In ontwikkelmodus maakt Payload het databaseschema aan en past het schemawijzigingen toe. Een omschakelinstelling is niet nodig: de app controleert de inhoud van de database. Het voorbeeld van 16 personen kun je voor een aparte testinstallatie **optioneel in een lege familiedatabase** opslaan met:
 
 ```sh
 npm run seed:demo -- --confirm-fictional
@@ -192,7 +184,15 @@ De opdracht weigert een gevulde familiedatabase en schrijft alles in één trans
 
 ## Privacy en toegang
 
-Opgeslagen personen, relaties en de familiekaart zijn uitsluitend zichtbaar voor ingelogde beheerders en actieve, uitgenodigde familieleden. Dit geldt ook voor de REST-API. Familieleden krijgen alleen kijkrechten; alleen beheerders mogen gegevens wijzigen. De oude instelling `PUBLIC_FAMILY_READ` wordt niet meer gebruikt en kan de gegevens niet openbaar maken. GraphQL blijft uitgeschakeld. De vaste fictieve voorbeelden blijven vrij toegankelijk.
+Opgeslagen personen, relaties en de familiekaart zijn uitsluitend zichtbaar voor ingelogde beheerders en actieve, uitgenodigde familieleden. Dit geldt ook voor de REST-API. Familieleden krijgen alleen kijkrechten; alleen beheerders mogen gegevens wijzigen. De oude instelling `PUBLIC_FAMILY_READ` wordt niet meer gebruikt en kan de gegevens niet openbaar maken. GraphQL blijft uitgeschakeld. De fictieve voorbeelden zijn uitsluitend beschikbaar zolang er geen opgeslagen personen zijn.
+
+### Google Tag Manager
+
+Container **GTM-T37ZTN97** is gekoppeld aan de gewone stamboom, kaart en verjaardagskalender. De container wordt na de toegangscontrole geladen, via `next/script` met `afterInteractive`. De app voegt geen familienamen, geboortedatums, woonplaatsen, e-mailadressen of inloggegevens aan de meetlaag toe; de standaard containerstart bevat alleen een tijdstip en het opstartevent.
+
+Het inlogscherm, de besloten toegangsmelding, accountbeheer en het CMS laden de container niet. Navigatie naar accountbeheer en terug vanaf het inlogscherm laadt een nieuwe pagina, zodat een eerder geladen container niet op die schermen achterblijft. De losse voorbeeldroutes laden de container evenmin; de gewone homepage bij een lege database wel.
+
+Tags, triggers en eventuele toestemming worden in de eigen GTM-container ingericht. Deze code installeert de container, maar voegt geen GA4-meet-ID, automatische formuliermeting of extra gedragsmetingen toe. Laat tags geen persoonsgegevens of uitnodigingstokens uitlezen en gebruik zo nodig een History Change-trigger voor navigatie binnen de app. De installatie gebruikt de nog ondersteunde JavaScript-containersnippet uit de [Google-installatiehandleiding](https://support.google.com/tagmanager/answer/14847097). Er is geen noscript-iframe: de interactieve applicatie vereist JavaScript.
 
 ### Familieleden uitnodigen
 
@@ -291,7 +291,7 @@ De gezinsfocus wordt getest op meerdere partnerschappen, afzonderlijke ouders, g
 
 De migratie `20261116_180458_partnership_titles` voegt de doorzoekbare titel toe en vult bestaande titels vanuit de gekoppelde namen. Voor een bestaande ontwikkelomgeving met automatische schema-aanpassing kan na een back-up `npm run sync:titles` worden gebruikt. Die opdracht past uitsluitend afgeleide titels aan en controleert binnen dezelfde transactie dat alle overige partnerschapsvelden gelijk blijven.
 
-In ontwikkelmodus is `/interaction-check` een browsercontrole die de echte homepage `/` in een frame opent. De controle test vier richtingen, vier bereikbare uitersten, stilstand, uitsluiten van touch, pauze, klikken, trackpad-onderbreking, bedieningsknoppen en de naamkaart. Zij verandert geen databasegegevens. Log bij databasegebruik eerst in of gebruik tijdelijk voorbeeldmodus. In een productiebuild geeft deze controlepagina 404. Een browserscript dat gebaren nabootst vervangt geen gebruikstest op een fysiek toestel.
+In ontwikkelmodus is `/interaction-check` een browsercontrole die de echte homepage `/` in een frame opent. De controle test vier richtingen, vier bereikbare uitersten, stilstand, uitsluiten van touch, pauze, klikken, trackpad-onderbreking, bedieningsknoppen en de naamkaart. Zij verandert geen databasegegevens. De vaste controles gebruiken fictieve personen; voer ze daarom uit in een afzonderlijke lege testomgeving. Er is geen omschakeling naar voorbeelden voor een gevulde database. In een productiebuild geeft deze controlepagina 404. Een browserscript dat gebaren nabootst vervangt geen gebruikstest op een fysiek toestel.
 
 De map `src/migrations/` bevat de initiële schemamigratie. De normale lokale ontwikkeling gebruikt Payloads automatische schema-aanpassing. Meng die niet met het alsnog uitvoeren van de initiële migratie op dezelfde al ingerichte database. Voor een nieuwe productieachtige database: voer migraties uit vóór `npm start`; publicatie is in deze opdracht niet ingericht.
 
