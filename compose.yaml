@@ -1,0 +1,16 @@
+name: familieboom
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: familieboom
+      POSTGRES_USER: familieboom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Stel POSTGRES_PASSWORD in .env in}
+    ports: ['127.0.0.1:54329:5432']
+    volumes: ['familieboom_data:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U familieboom']
+      interval: 3s
+      retries: 15
+volumes:
+  familieboom_data:

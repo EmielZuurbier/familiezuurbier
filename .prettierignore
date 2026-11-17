@@ -1,0 +1,11 @@
+node_modules
+.next
+package-lock.json
+src/payload-types.ts
+src/app/(payload)/admin/importMap.js
+src/migrations/*.json
+
+.local-import/
+.local-admin.txt
+
+.local-migrations/

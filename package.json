@@ -1,0 +1,72 @@
+{
+  "name": "familieboom",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.22.3"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "payload": "payload",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap",
+    "admin:create": "tsx --env-file=.env scripts/create-admin.ts",
+    "seed:demo": "tsx --env-file=.env scripts/seed-demo.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose stop",
+    "test:database": "tsx --env-file=.env scripts/check-database.ts",
+    "setup:local": "node scripts/setup-local.mjs",
+    "backup": "node scripts/backup.mjs",
+    "export:family": "tsx --env-file=.env scripts/export-family.ts",
+    "format": "prettier --write .",
+    "admin:password": "tsx --env-file=.env scripts/reset-password.ts",
+    "migrate:children": "tsx --env-file=.env scripts/migrate-partnership-children.ts",
+    "test:children": "tsx --env-file=.env scripts/check-partnership-children.ts",
+    "test:accounts": "tsx --env-file=.env scripts/check-family-accounts.ts",
+    "check:layout": "tsx --env-file=.env scripts/check-family-layout.ts",
+    "test:titles": "tsx --env-file=.env scripts/check-partnership-titles.ts",
+    "sync:titles": "tsx --env-file=.env scripts/sync-partnership-titles.ts",
+    "test:photos": "tsx --env-file=.env scripts/check-person-photos.ts"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/lora": "^5.3.0",
+    "@payloadcms/db-postgres": "3.93.0",
+    "@payloadcms/next": "3.93.0",
+    "@payloadcms/translations": "3.93.0",
+    "@xyflow/react": "12.12.1",
+    "graphql": "16.11.0",
+    "lucide-react": "^0.468.0",
+    "mapbox-gl": "^3.35.0",
+    "next": "16.4.6",
+    "nodemailer": "^10.6.0",
+    "payload": "3.93.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "16.4.6",
+    "node": "24.22.3",
+    "prettier": "^3.10.1",
+    "sass": "^1.93.0",
+    "tsx": "^4.21.0",
+    "typescript": "6.0.3",
+    "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "dompurify": "3.4.18"
+  }
+}

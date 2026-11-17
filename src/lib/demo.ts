@@ -1,0 +1,66 @@
+import type { Family, Person } from './types'
+function person(
+  id: string,
+  name: string,
+  year?: number,
+  lifeStatus: Person['lifeStatus'] = 'unknown',
+  deathYear?: number,
+): Person {
+  return {
+    id,
+    name,
+    birth: { year },
+    birthPlace: 'Voorbeelddorp',
+    lifeStatus,
+    death: { year: deathYear },
+  }
+}
+// Alle namen, datums en verbindingen zijn fictief; geen transcriptie van de familiefoto.
+export const demoFamily: Family = {
+  people: [
+    person('1', 'Willem Voorbeeld', 1920, 'deceased', 1996),
+    person('2', 'Anna van de Linde', 1923, 'deceased', 2008),
+    person('3', 'Pieter Voorbeeld', 1947, 'deceased', 2021),
+    person('4', 'Maria de Wit', 1950, 'living'),
+    person('5', 'Elisabeth Voorbeeld', 1952, 'living'),
+    person('6', 'Jan van Dalen', 1950, 'living'),
+    person('7', 'Sophie Voorbeeld', 1976, 'living'),
+    person('8', 'Thomas Bakker', 1975, 'living'),
+    person('9', 'Lucas Voorbeeld', 1980, 'living'),
+    person('10', 'Eva Vermeer', 1982, 'living'),
+    person('11', 'Noor van Dalen', 1979, 'living'),
+    person('12', 'Daan Visser', 1978),
+    person('13', 'Mila Bakker', 2005, 'living'),
+    person('14', 'Finn Bakker', 2008, 'living'),
+    person('15', 'Lotte Voorbeeld', 2012, 'living'),
+    person('16', 'Sam Visser', 2010, 'living'),
+  ],
+  parentages: [
+    ['1', '3'],
+    ['2', '3'],
+    ['1', '5'],
+    ['2', '5'],
+    ['3', '7'],
+    ['4', '7'],
+    ['3', '9'],
+    ['4', '9'],
+    ['5', '11'],
+    ['6', '11'],
+    ['7', '13'],
+    ['8', '13'],
+    ['7', '14'],
+    ['8', '14'],
+    ['9', '15'],
+    ['10', '15'],
+    ['11', '16'],
+    ['12', '16'],
+  ].map(([parent, child], i) => ({ id: `o${i}`, parent, child })),
+  partnerships: [
+    ['1', '2'],
+    ['3', '4'],
+    ['5', '6'],
+    ['7', '8'],
+    ['9', '10'],
+    ['11', '12'],
+  ].map(([personA, personB], i) => ({ id: `p${i}`, personA, personB, status: 'unknown' })),
+}
