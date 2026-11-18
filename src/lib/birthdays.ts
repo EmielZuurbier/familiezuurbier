@@ -44,7 +44,7 @@ function ageLabel(person: Person, year: number, today: CalendarDay) {
   const years = year - birth.year
   if (years < 0) return `Geboren na ${year}`
   if (years === 0) return `Geboortejaar ${year}`
-  if (person.lifeStatus !== 'living') return `Zou ${years} jaar worden`
+  if (person.lifeStatus === 'deceased') return `Zou ${years} jaar worden`
   // A 29 February birthday keeps its real date. Do not silently move it to
   // 28 February or 1 March when the family has not chosen that convention.
   if (birth.month === 2 && birth.day === 29 && !isLeapYear(year)) return `${years} jaar in ${year}`

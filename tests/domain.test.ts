@@ -197,6 +197,48 @@ describe('muis verkent tegengesteld en bereikt de uitersten', () => {
     expect(move(500, 370).viewport!.y).toBeLessThan(view.y)
     expect(move(500, 330).viewport!.y).toBeGreaterThan(view.y)
   })
+  it('geeft gelijke muisstappen dezelfde verplaatsing, ook door het midden en bij omkeren', () => {
+    for (const speed of [0.3, 0.5, 0.8])
+      for (const zoom of [0.65, 1, 1.65])
+        for (const axis of ['x', 'y'] as const) {
+          // Deliberately off-centre camera: the old two half-curves had different gains here.
+          let current = constrainViewport({ x: 0, y: -500, zoom }, bounds, size)
+          let a = panViewport(null, sample, current, bounds, size, speed).anchor!
+          let previous = 0
+          const ratios: number[] = []
+          for (const offset of [6, 12, 18, 24, 18, 12, 6, 0, -6, -12, -18]) {
+            const point = { ...sample.point, [axis]: sample.point[axis] + offset }
+            const next = panViewport(a, { ...sample, point }, current, bounds, size, speed)
+            ratios.push((next.viewport![axis] - current[axis]) / (offset - previous))
+            current = next.viewport!
+            a = next.anchor!
+            previous = offset
+          }
+          expect(ratios[0]).toBeLessThan(0)
+          for (const ratio of ratios) expect(ratio).toBeCloseTo(ratios[0], 8)
+        }
+  })
+  it('telt snelle muisgebeurtenissen op zonder verplaatsing te verliezen tussen beeldframes', () => {
+    const a = anchor()
+    const first = move(510, 350, a)
+    // The browser has not painted first.viewport yet.
+    const second = move(520, 350, first.anchor!)
+    expect(second.viewport!.x - view.x).toBeCloseTo(2 * (first.viewport!.x - view.x))
+    expect(second.viewport!.x).toBeCloseTo(move(520, 350, a).viewport!.x, 8)
+  })
+  it('reageert na een begrenzing direct op omkeren zonder een dode muiszone', () => {
+    const a = anchor(),
+      end = move(size.width, 350, a)
+    const back = panViewport(
+      end.anchor,
+      { ...sample, point: { x: size.width - 1, y: 350 } },
+      end.viewport!,
+      bounds,
+      size,
+      0.5,
+    )
+    expect(back.viewport!.x - end.viewport!.x).toBeCloseTo(a.gain.x)
+  })
   it('toont de volledige buitenste kaarten met witruimte, ruim voor de muisrand, bij elke snelheid en zoom', () => {
     for (const speed of [0.3, 0.5, 0.8])
       for (const zoom of [0.65, 1, 1.65]) {

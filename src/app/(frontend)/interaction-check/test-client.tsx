@@ -100,6 +100,28 @@ export function InteractionCheck({ source = '/' }: { source?: string }) {
       await checkDirection(-20, 0, 'links → vlak rechts')
       await checkDirection(0, 20, 'omlaag → vlak omhoog')
       await checkDirection(0, -20, 'omhoog → vlak omlaag')
+      const checkConstantSteps = async (axis: 'x' | 'y') => {
+        resetAnchor()
+        pointer(canvas, x, y)
+        await nextFrame()
+        let previous = 0,
+          previousMatrix = transform(),
+          ratio: number | undefined
+        for (const offset of [6, 12, 18, 24, 18, 12, 6, 0, -6, -12]) {
+          pointer(canvas, x + (axis === 'x' ? offset : 0), y + (axis === 'y' ? offset : 0))
+          await nextFrame()
+          const matrix = transform()
+          const movement =
+            axis === 'x' ? matrix.m41 - previousMatrix.m41 : matrix.m42 - previousMatrix.m42
+          const nextRatio = movement / (offset - previous)
+          if (ratio === undefined) ratio = nextRatio
+          assert(Math.abs(nextRatio - ratio) < 0.05, `Geen constante muisverplaatsing op ${axis}`)
+          previous = offset
+          previousMatrix = matrix
+        }
+      }
+      await checkConstantSteps('x')
+      await checkConstantSteps('y')
       resetAnchor()
       pointer(canvas, x, y)
       await nextFrame()
@@ -235,7 +257,7 @@ export function InteractionCheck({ source = '/' }: { source?: string }) {
       await nextFrame()
       assert(transform().toString() === manualPause, 'Handmatige pauze is niet behouden')
       setResult(
-        `GESLAAGD (${style}) OP ${source}: extra witruimte, uitersten bereikbaar zonder de muisrand, richtingen, stilstand, touch, pauze, trackpad, knoppen, persoonsfocus, selectie pauzeert, wisselen blijft gepauzeerd, deselecteren hervat zonder sprong, handmatige pauze blijft behouden en alleen ingevulde oudersecties zichtbaar.`,
+        `GESLAAGD (${style}) OP ${source}: constante muisverplaatsing, extra witruimte, uitersten bereikbaar zonder de muisrand, richtingen, stilstand, touch, pauze, trackpad, knoppen, persoonsfocus, selectie pauzeert, wisselen blijft gepauzeerd, deselecteren hervat zonder sprong, handmatige pauze blijft behouden en alleen ingevulde oudersecties zichtbaar.`,
       )
     } catch (error) {
       setResult('MISLUKT: ' + (error as Error).message)

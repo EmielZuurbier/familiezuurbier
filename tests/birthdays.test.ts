@@ -79,11 +79,29 @@ describe('Verjaardagskalender', () => {
     expect(result.incomplete.map((p) => p.id)).toEqual(['a', 'b', 'c', 'd', 'e'])
     expect(result.months.every((month) => month.birthdays.length === 0)).toBe(true)
   })
-  it('doet bij overleden personen of onbekende levensstatus geen uitspraak dat iemand nog leeft', () => {
+  it('gebruikt alleen bij overleden personen de tekst zou worden', () => {
     const dead = entries([person('a', { year: 1920, month: 2, day: 3 }, 'deceased')])[0]
     const unknown = entries([person('a', { year: 1920, month: 2, day: 3 }, 'unknown')])[0]
     expect(dead.ageLabel).toBe('Zou 106 jaar worden')
-    expect(unknown.ageLabel).toBe('Zou 106 jaar worden')
+    expect(unknown.ageLabel).toBe('Werd 106 jaar')
+  })
+  it('toont bij kinderen zonder overlijdensvinkje de gewone verjaardagstekst', () => {
+    for (const status of ['unknown', 'living'] as const) {
+      const result = entries([
+        person('gisteren', { year: 2020, month: 11, day: 15 }, status),
+        person('vandaag', { year: 2020, month: 11, day: 16 }, status),
+        person('morgen', { year: 2020, month: 11, day: 17 }, status),
+      ])
+      expect(result.map((entry) => entry.ageLabel)).toEqual([
+        'Werd 6 jaar',
+        'Vandaag 6 jaar',
+        'Wordt 6 jaar',
+      ])
+      expect(result.every((entry) => !entry.ageLabel.startsWith('Zou'))).toBe(true)
+    }
+    expect(
+      entries([person('herdenken', { year: 2020, month: 11, day: 17 }, 'deceased')])[0].ageLabel,
+    ).toBe('Zou 6 jaar worden')
   })
   it('behoudt 29 februari en kiest geen ongevraagde vervangende feestdag', () => {
     const p = person('a', { year: 2000, month: 2, day: 29 })

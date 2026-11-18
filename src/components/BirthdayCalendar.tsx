@@ -304,9 +304,7 @@ export function BirthdayCalendar({
                                     <span className="birthday-today">
                                       {entry.person.lifeStatus === 'deceased'
                                         ? 'Vandaag geboortedag'
-                                        : entry.person.lifeStatus === 'living'
-                                          ? 'Vandaag jarig'
-                                          : 'Vandaag geboortedag'}
+                                        : 'Vandaag jarig'}
                                     </span>
                                   )}
                                 </span>
@@ -360,7 +358,7 @@ export function BirthdayCalendar({
         </div>
         <footer className="workspace-footer birthday-footer">
           <span>Leeftijden gelden voor {year} · Nederlandse kalenderdag</span>
-          <span>Bij onbekende of overleden levensstatus: “zou worden”</span>
+          <span>Alleen bij overleden personen: “zou worden”</span>
         </footer>
       </section>
     </main>
