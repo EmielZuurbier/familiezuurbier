@@ -206,9 +206,6 @@ export interface Person {
    * Vul de oorspronkelijke achternaam in, als die bekend is.
    */
   birthSurname?: string | null;
-  /**
-   * Vul plaats en land in, bijvoorbeeld Haarlem, Nederland.
-   */
   currentResidence?: string | null;
   /**
    * Vul alleen bekende onderdelen in. Laat onbekende velden leeg.

@@ -131,13 +131,13 @@ export function preferredCandidate(
   return exact.length === 1 ? exact[0] : null
 }
 
-export function geocodingURL(place: string, token: string): string {
+export function geocodingURL(place: string, token: string, autocomplete = false): string {
   const url = new URL('https://api.mapbox.com/search/geocode/v6/forward')
   url.search = new URLSearchParams({
     q: place,
     access_token: token,
     types: 'place,locality',
-    autocomplete: 'false',
+    autocomplete: String(autocomplete),
     limit: '5',
     language: 'nl',
     permanent: 'false',

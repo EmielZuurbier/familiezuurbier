@@ -243,10 +243,15 @@ export const People: CollectionConfig = {
       name: 'currentResidence',
       label: 'Huidige woonplaats',
       type: 'text',
-      admin: { description: 'Vul plaats en land in, bijvoorbeeld Haarlem, Nederland.' },
+      admin: { components: { Field: './components/PlaceField#PlaceField' } },
     },
     dateFields('birth', 'Geboortedatum'),
-    { name: 'birthPlace', label: 'Geboorteplaats', type: 'text' },
+    {
+      name: 'birthPlace',
+      label: 'Geboorteplaats',
+      type: 'text',
+      admin: { components: { Field: './components/PlaceField#PlaceField' } },
+    },
     {
       name: 'lifeStatus',
       label: 'Overleden',

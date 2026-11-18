@@ -1,0 +1,116 @@
+.control {
+  color: var(--theme-text, #263c31);
+}
+.inputWrap {
+  position: relative;
+}
+.icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 42px;
+  border: 1px solid var(--theme-elevation-150, #d9ded7);
+  border-radius: 5px;
+  padding: 10px 12px 10px 38px;
+  background: var(--theme-input-bg, #fff);
+  color: inherit;
+  font: inherit;
+}
+.input:focus-visible {
+  outline: 2px solid var(--theme-elevation-600, #345d49);
+  outline-offset: 2px;
+}
+.input[aria-invalid='true'] {
+  border-color: var(--theme-error-500, #b14335);
+}
+.input:read-only {
+  opacity: 0.65;
+}
+.feedback {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.message,
+.matched {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 8px 0 0;
+}
+.message {
+  color: var(--theme-elevation-600, #647365);
+}
+.matched {
+  color: #287144;
+}
+.message svg,
+.matched svg,
+.suggestions li svg {
+  flex: none;
+  margin-top: 3px;
+}
+.suggestions {
+  margin-top: 10px;
+  border: 1px solid var(--theme-elevation-150, #d9ded7);
+  border-radius: 6px;
+  padding: 12px;
+  background: var(--theme-elevation-0, #fff);
+}
+.heading {
+  font-weight: 600;
+}
+.suggestions ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.suggestions button {
+  display: flex;
+  gap: 8px;
+  padding: 10px 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.suggestions button:hover,
+.suggestions button[aria-selected='true'] {
+  background: var(--theme-elevation-100, #edf2eb);
+}
+.suggestions button:focus-visible {
+  outline: 2px solid #345d49;
+}
+.suggestions a,
+.hint {
+  font-size: 11px;
+  color: var(--theme-elevation-600, #647365);
+}
+.hint {
+  margin: 8px 0;
+}
+.retry {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  margin-top: 8px;
+  border: 1px solid var(--theme-elevation-150, #d9ded7);
+  background: transparent;
+  color: inherit;
+  border-radius: 5px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
