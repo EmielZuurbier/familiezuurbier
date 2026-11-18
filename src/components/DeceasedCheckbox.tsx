@@ -28,7 +28,7 @@ export const DeceasedCheckbox: SelectFieldClientComponent = ({ path, readOnly })
       />
       <FieldDescription
         path={field.path}
-        description="Vink alleen aan wanneer bekend is dat deze persoon is overleden. Datum en plaats van overlijden mogen onbekend blijven."
+        description="Vink alleen aan wanneer bekend is dat deze persoon is overleden. De overlijdensdatum mag onbekend blijven."
       />
     </div>
   )

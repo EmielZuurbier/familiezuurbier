@@ -7,6 +7,8 @@ import { familyBrand } from '@/lib/branding'
 import type { Family, Person } from '@/lib/types'
 import {
   geocodingURL,
+  mapLayers,
+  type MapLayer,
   groupResidences,
   normalizePlace,
   placeCandidates,
@@ -41,7 +43,17 @@ export function FamilyMap({
   mapHref: string
   viewer?: FamilyViewer
 }) {
-  const { groups, missing } = useMemo(() => groupResidences(family.people), [family.people])
+  const layerGroups = useMemo(
+    () => mapLayers.map((layer) => ({ ...layer, ...groupResidences(family.people, layer.id) })),
+    [family.people],
+  )
+  const allGroups = useMemo(() => layerGroups.flatMap((layer) => layer.groups), [layerGroups])
+  const [layers, setLayers] = useState<MapLayer[]>(['residence', 'birth'])
+  const activeLayers = layerGroups.filter((layer) => layers.includes(layer.id))
+  const groups = useMemo(
+    () => allGroups.filter((group) => layers.includes(group.layer)),
+    [allGroups, layers],
+  )
   const [lookups, setLookups] = useState<Record<string, Lookup>>({})
   const [selected, setSelected] = useState<string | null>(null)
   const [focused, setFocused] = useState<string | null>(null)
@@ -57,11 +69,18 @@ export function FamilyMap({
   useEffect(() => {
     if (!ready || !token) return
     const controller = new AbortController()
+    // Share geography lookups across layers; place choices remain independent.
+    const buckets = new Map<string, typeof allGroups>()
+    for (const group of allGroups) {
+      buckets.set(group.lookupKey, [...(buckets.get(group.lookupKey) ?? []), group])
+    }
+    const requests = [...buckets.values()]
     let index = 0,
       denied = false
     async function worker() {
-      while (index < groups.length && !controller.signal.aborted) {
-        const group = groups[index++]
+      while (index < requests.length && !controller.signal.aborted) {
+        const batch = requests[index++]
+        const group = batch[0]
         let lookup: Lookup = { state: 'error', candidates: [] }
         if (!denied)
           try {
@@ -84,16 +103,19 @@ export function FamilyMap({
           } catch {
             if (controller.signal.aborted) return
             setLookupError(
-              'Niet alle woonplaatsen konden worden opgezocht. Controleer je verbinding of probeer opnieuw.',
+              'Niet alle plaatsen konden worden opgezocht. Controleer je verbinding of probeer opnieuw.',
             )
           }
         if (!controller.signal.aborted)
-          setLookups((current) => ({ ...current, [group.key]: lookup }))
+          setLookups((current) => ({
+            ...current,
+            ...Object.fromEntries(batch.map((item) => [item.key, lookup])),
+          }))
       }
     }
-    void Promise.all(Array.from({ length: Math.min(3, groups.length) }, worker))
+    void Promise.all(Array.from({ length: Math.min(3, requests.length) }, worker))
     return () => controller.abort()
-  }, [groups, token, ready, attempt])
+  }, [allGroups, token, ready, attempt])
 
   const points = useMemo(
     () =>
@@ -108,26 +130,34 @@ export function FamilyMap({
   const loading = groups.some(
     (group) => !lookups[group.key] || lookups[group.key].state === 'loading',
   )
-  const plotted = points.reduce((n, point) => n + point.group.people.length, 0)
+  const plotted = new Set(points.flatMap((point) => point.group.people.map((p) => p.id))).size
   const person = family.people.find((person) => person.id === selected)
   const q = normalizePlace(query)
   const matches = (p: Person) =>
     !q ||
-    normalizePlace(`${p.name} ${p.birthSurname ?? ''} ${p.currentResidence ?? ''}`).includes(q)
-  const selectPerson = (id: string) => {
-    const next = family.people.find((p) => p.id === id)
-    setSelected((current) => (current === id ? null : id))
-    setFocused(next?.currentResidence ? normalizePlace(next.currentResidence) : null)
+    normalizePlace(
+      `${p.name} ${p.birthSurname ?? ''} ${p.currentResidence ?? ''} ${p.birthPlace ?? ''}`,
+    ).includes(q)
+  const selectPerson = (id: string, groupKey?: string) => {
+    const nextGroup =
+      groups.find((group) => group.key === groupKey) ??
+      groups.find((group) => group.key === focused && group.people.some((p) => p.id === id)) ??
+      groups.find((group) => group.people.some((p) => p.id === id))
+    setSelected((current) => (current === id && focused === (nextGroup?.key ?? null) ? null : id))
+    setFocused(nextGroup?.key ?? null)
     setFocusRequest((n) => n + 1)
     setListOpen(false)
     setQuery('')
   }
-  const selectPlace = useCallback((key: string) => {
-    setFocused(key)
-    setFocusRequest((n) => n + 1)
-    setSelected(null)
-    setListOpen(true)
-  }, [])
+  const selectPlace = useCallback(
+    (key: string) => {
+      setFocused(key)
+      setFocusRequest((n) => n + 1)
+      setSelected(null)
+      setListOpen(true)
+    },
+    [setFocused, setSelected],
+  )
   useEffect(() => {
     if (focused) groupElements.current.get(focused)?.scrollIntoView({ block: 'nearest' })
   }, [focused, listOpen])
@@ -141,12 +171,12 @@ export function FamilyMap({
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
-  const personButton = (p: Person) => (
+  const personButton = (p: Person, groupKey?: string) => (
     <button
       className="map-person"
       key={p.id}
       aria-pressed={p.id === selected}
-      onClick={() => selectPerson(p.id)}
+      onClick={() => selectPerson(p.id, groupKey)}
     >
       <span className="map-person-identity">
         <PersonAvatar person={p} className="mini-avatar" />
@@ -167,17 +197,17 @@ export function FamilyMap({
             <br />
             <em>{demo ? 'op de kaart.' : `${familyBrand.surname}.`}</em>
           </h1>
-          <p>Ontdek waar de familie woont. Elke stip is een woonplaats.</p>
+          <p>Ontdek waar de familie woont en waar onze verhalen begonnen.</p>
         </div>
         <div className="search-area">
-          <label htmlFor="map-person-search">Zoek een persoon of woonplaats</label>
+          <label htmlFor="map-person-search">Zoek een persoon of plaats</label>
           <div className="search-field">
             <Search size={17} />
             <input
               id="map-person-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Naam of woonplaats…"
+              placeholder="Naam of plaats…"
             />
             {query && (
               <button onClick={() => setQuery('')} aria-label="Zoekopdracht wissen">
@@ -199,10 +229,10 @@ export function FamilyMap({
           className="map-person-list"
           id="map-person-list"
           data-open={listOpen || !!q}
-          aria-label="Personen per woonplaats"
+          aria-label="Personen per kaartlaag"
         >
           <div className="map-list-heading">
-            <span className="eyebrow">WOONPLAATSEN</span>
+            <span className="eyebrow">PLAATSEN</span>
             <button
               className="map-list-close"
               onClick={() => {
@@ -230,23 +260,29 @@ export function FamilyMap({
                   <button
                     className="residence-heading"
                     onClick={() => selectPlace(group.key)}
-                    aria-label={`Bekijk woonplaats ${group.label}`}
+                    aria-label={`Bekijk ${mapLayers.find((layer) => layer.id === group.layer)!.label.toLowerCase()} ${group.label}`}
                   >
-                    <MapPin size={14} />
+                    <MapPin
+                      size={14}
+                      color={mapLayers.find((layer) => layer.id === group.layer)!.color}
+                    />
                     <strong>{group.label}</strong>
                     <span>{group.people.length}</span>
                   </button>
+                  <p className="map-group-layer">
+                    {mapLayers.find((layer) => layer.id === group.layer)!.label}
+                  </p>
                   <p className="residence-status">
                     {lookup?.state === 'ready'
                       ? lookup.chosen?.label
                       : lookup?.state === 'choose'
                         ? 'Kies de juiste plaats hieronder'
                         : lookup?.state === 'missing'
-                          ? 'Plaats niet gevonden; controleer de woonplaats in het beheer'
+                          ? 'Plaats niet gevonden; controleer de plaats in het beheer'
                           : lookup?.state === 'error'
                             ? 'Nog niet op de kaart geplaatst'
                             : ready
-                              ? 'Woonplaats opzoeken…'
+                              ? 'Plaats opzoeken…'
                               : 'Nog niet op de kaart geplaatst'}
                   </p>
                   {lookup?.state === 'ready' && (
@@ -266,7 +302,7 @@ export function FamilyMap({
                     <label className="place-choice">
                       Welke plaats bedoel je?
                       <select
-                        aria-label={`Kies de juiste plaats voor ${group.label}`}
+                        aria-label={`Kies de juiste ${group.layer === 'birth' ? 'geboorteplaats' : 'woonplaats'} voor ${group.label}`}
                         defaultValue=""
                         onChange={(e) => {
                           const chosen = lookup.candidates.find(
@@ -294,24 +330,27 @@ export function FamilyMap({
                       </select>
                     </label>
                   )}
-                  {group.people.filter(matches).map(personButton)}
+                  {group.people.filter(matches).map((p) => personButton(p, group.key))}
                 </section>
               )
             })}
-          {!!missing.filter(matches).length && (
-            <section className="residence-group">
-              <h2 className="residence-heading">
-                <Users size={14} />
-                Woonplaats onbekend<span>{missing.filter(matches).length}</span>
-              </h2>
-              <p className="residence-status">
-                {viewer === 'family'
-                  ? 'Een beheerder kan de huidige woonplaats toevoegen.'
-                  : 'Vul een huidige woonplaats in bij de persoon in het beheer.'}
-              </p>
-              {missing.filter(matches).map(personButton)}
-            </section>
-          )}
+          {activeLayers.map((layer) => {
+            const missing = layer.missing.filter(matches)
+            return missing.length ? (
+              <section className="residence-group" key={`missing-${layer.id}`}>
+                <h2 className="residence-heading">
+                  <Users size={14} />
+                  {layer.label} onbekend<span>{missing.length}</span>
+                </h2>
+                <p className="residence-status">
+                  {viewer === 'family'
+                    ? `Een beheerder kan de ${layer.label.toLowerCase()} toevoegen.`
+                    : `Vul de ${layer.label.toLowerCase()} in bij de persoon in het beheer.`}
+                </p>
+                {missing.map((p) => personButton(p))}
+              </section>
+            ) : null
+          })}
           {!family.people.some(matches) && (
             <p className="map-empty-list">Geen personen gevonden.</p>
           )}
@@ -332,9 +371,37 @@ export function FamilyMap({
         {demo && (
           <div className="demo-banner">
             <MapPin size={15} />
-            <p>Alle personen en woonplaatsen in dit voorbeeld zijn fictief.</p>
+            <p>Alle personen en plaatskoppelingen in dit voorbeeld zijn fictief.</p>
           </div>
         )}
+        <fieldset className="map-layer-filter">
+          <legend>Kaartlagen</legend>
+          {mapLayers.map((layer) => (
+            <label key={layer.id} data-layer={layer.id}>
+              <input
+                type="checkbox"
+                checked={layers.includes(layer.id)}
+                onChange={(event) => {
+                  const enabled = event.target.checked
+                  setLayers((current) =>
+                    mapLayers
+                      .filter((item) =>
+                        item.id === layer.id ? enabled : current.includes(item.id),
+                      )
+                      .map((item) => item.id),
+                  )
+                  setFocused(null)
+                }}
+              />
+              <span
+                className="map-layer-swatch"
+                style={{ backgroundColor: layer.color }}
+                aria-hidden="true"
+              />
+              {layer.label}
+            </label>
+          ))}
+        </fieldset>
         <div className={`tree-stage map-stage ${person ? 'has-detail' : ''}`}>
           {token ? (
             <MapCanvas
@@ -344,6 +411,7 @@ export function FamilyMap({
               focusRequest={focusRequest}
               hasDetail={!!person}
               settled={!loading}
+              viewKey={layers.join(',')}
               onSelect={selectPlace}
               onReady={mapReady}
             />
@@ -356,17 +424,20 @@ export function FamilyMap({
               </p>
             </div>
           )}
-          {ready && !groups.length && (
+          {(!layers.length || (ready && !groups.length)) && (
             <div className="map-empty-state">
-              <h3>Waar woont de familie?</h3>
+              <h3>{layers.length ? 'Nog geen plaatsen ingevuld' : 'Kies een kaartlaag'}</h3>
               <p>
-                Vul bij een persoon de huidige woonplaats in. Daarna verschijnt die op deze kaart.
+                {layers.length
+                  ? 'Vul bij een persoon een plaats in voor de gekozen kaartlaag. Daarna verschijnt die op deze kaart.'
+                  : 'Zet huidige woonplaats, geboorteplaats of beide lagen aan.'}
               </p>
-              {viewer !== 'family' ? (
-                <Link href="/admin">Woonplaatsen invullen →</Link>
-              ) : (
-                <p>Een beheerder kan de woonplaatsen toevoegen.</p>
-              )}
+              {!!layers.length &&
+                (viewer !== 'family' ? (
+                  <Link href="/admin">Plaatsen invullen →</Link>
+                ) : (
+                  <p>Een beheerder kan de plaatsen toevoegen.</p>
+                ))}
             </div>
           )}
           {person && (
@@ -382,9 +453,9 @@ export function FamilyMap({
         </div>
         <footer className="workspace-footer map-footer">
           <span role="status">
-            {plotted} van {family.people.length} personen op de kaart · {points.length} woonplaatsen
-            {missing.length ? ` · ${missing.length} zonder woonplaats` : ''}
-            {token && ready && loading ? ' · Woonplaatsen opzoeken…' : ''}
+            {plotted} van {family.people.length} personen op de kaart · {points.length}{' '}
+            plaatsmarkeringen
+            {token && ready && loading ? ' · Plaatsen opzoeken…' : ''}
           </span>
           {lookupError ? (
             <button
@@ -396,7 +467,7 @@ export function FamilyMap({
               title={lookupError}
             >
               <RotateCw size={13} />
-              Woonplaatsen opnieuw opzoeken
+              Plaatsen opnieuw opzoeken
             </button>
           ) : (
             <span className="desktop-only">Sleep om te verplaatsen · scroll om te zoomen</span>

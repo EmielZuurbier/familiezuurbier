@@ -56,6 +56,9 @@ describe('Voorbeelden alleen zonder opgeslagen personen', () => {
                   id: 1,
                   name: 'Opgeslagen testpersoon',
                   birth: { year: 1980 },
+                  birthPlace: 'Haarlem',
+                  currentResidence: 'Leiden',
+                  deathPlace: 'Legacyplaats die niet meer zichtbaar mag zijn',
                   lifeStatus: 'unknown',
                 },
               ]
@@ -68,6 +71,13 @@ describe('Voorbeelden alleen zonder opgeslagen personen', () => {
         persistent: true,
         family: { people: [{ name: 'Opgeslagen testpersoon' }] },
       })
+      if (result.kind === 'ready') {
+        expect(result.family.people[0]).not.toHaveProperty('deathPlace')
+        expect(result.family.people[0]).toMatchObject({
+          birthPlace: 'Haarlem',
+          currentResidence: 'Leiden',
+        })
+      }
       for (const [query] of mocks.find.mock.calls)
         expect(query).toMatchObject({ overrideAccess: false, user })
       mocks.find.mockClear()

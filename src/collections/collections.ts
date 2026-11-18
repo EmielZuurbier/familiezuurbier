@@ -120,10 +120,9 @@ export const People: CollectionConfig = {
         }
         if (dateOrderError(birth, death)) fail('Overlijden kan niet voor de geboorte liggen.')
         const hasDeath = Object.values(death).some((v) => v != null)
-        const deathPlace = data.deathPlace ?? originalDoc?.deathPlace
-        if (lifeStatus !== 'deceased' && (hasDeath || deathPlace))
+        if (lifeStatus !== 'deceased' && hasDeath)
           fail(
-            'Er zijn nog overlijdensgegevens opgeslagen. Vink ‘Overleden’ aan om deze zichtbaar te maken. Wil je het vinkje uitzetten, wis dan eerst de overlijdensdatum en de plaats van overlijden.',
+            'Er is nog een overlijdensdatum opgeslagen. Vink ‘Overleden’ aan om deze zichtbaar te maken. Wil je het vinkje uitzetten, wis dan eerst de overlijdensdatum.',
           )
         data.name = String(data.name ?? originalDoc?.name ?? '').trim()
         if (!data.name) fail('Vul een naam in.')
@@ -270,9 +269,16 @@ export const People: CollectionConfig = {
     dateFields('death', 'Overlijdensdatum'),
     {
       name: 'deathPlace',
-      label: 'Plaats van overlijden',
+      // Retain the legacy column without exposing or accepting this retired field.
       type: 'text',
-      admin: { condition: (data) => data.lifeStatus === 'deceased' },
+      hidden: true,
+      admin: {
+        disabled: true,
+        disableListColumn: true,
+        disableListFilter: true,
+        disableGroupBy: true,
+      },
+      access: { read: () => false, create: () => false, update: () => false },
     },
   ],
 }

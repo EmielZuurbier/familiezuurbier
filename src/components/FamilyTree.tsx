@@ -1123,7 +1123,6 @@ export function PersonDetail({
               <div>
                 <span className="detail-label">Overlijdensdatum</span>
                 <strong>{formatDate(person.death)}</strong>
-                <p>{person.deathPlace || 'Plaats onbekend'}</p>
               </div>
             </div>
           )}

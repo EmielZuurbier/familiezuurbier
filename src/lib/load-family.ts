@@ -109,7 +109,6 @@ export async function loadFamily(): Promise<FamilyResult> {
             birthPlace: p.birthPlace,
             lifeStatus: p.lifeStatus,
             death: p.death ?? {},
-            deathPlace: p.deathPlace,
           }
         }),
         parentages: effectiveParentages(manual, pairs),

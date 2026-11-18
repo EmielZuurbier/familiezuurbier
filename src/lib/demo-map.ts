@@ -21,6 +21,7 @@ export const demoMapFamily: Family = {
   ...demoFamily,
   people: demoFamily.people.map((person, i) => ({
     ...person,
+    birthPlace: i < places.length ? places[(i + 2) % places.length] : null,
     currentResidence: places[i] ?? null,
   })),
 }

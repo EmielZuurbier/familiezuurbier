@@ -20,7 +20,6 @@ export type Person = {
   birthPlace?: string | null
   lifeStatus: 'living' | 'deceased' | 'unknown'
   death: PartialDate
-  deathPlace?: string | null
 }
 export type Parentage = { id: string; parent: string; child: string }
 export type Partnership = {

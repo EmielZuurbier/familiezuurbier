@@ -3,6 +3,8 @@ import {
   geocodingURL,
   groupResidences,
   mergeMappedResidences,
+  mapMarkerOffsets,
+  mapLayers,
   placeCandidates,
   preferredCandidate,
   type PlaceCandidate,
@@ -100,6 +102,44 @@ describe('Woonplaatsen op de familiekaart', () => {
       'permanent',
       'q',
       'types',
+    ])
+  })
+  it('houdt woonplaats en geboorteplaats apart, ook voor dezelfde persoon op dezelfde plaats', () => {
+    const people = [{ ...person('1', 'Haarlem'), birthPlace: 'Haarlem' }]
+    const residence = groupResidences(people).groups[0]
+    const birth = groupResidences(people, 'birth').groups[0]
+    expect(residence.key).not.toBe(birth.key)
+    expect(residence.lookupKey).toBe(birth.lookupKey)
+    const points = mergeMappedResidences(
+      [residence, birth].map((group) => ({ group, place: haarlem })),
+    )
+    expect(points).toHaveLength(2)
+    expect(points.map((point) => point.group.layer)).toEqual(['residence', 'birth'])
+    expect(new Set(mapLayers.map((layer) => layer.color)).size).toBe(2)
+    const offsets = mapMarkerOffsets(points)
+    expect(Math.abs(offsets[0][0] - offsets[1][0])).toBeGreaterThan(35)
+    expect(points.map((point) => point.place.coordinates)).toEqual([
+      haarlem.coordinates,
+      haarlem.coordinates,
+    ])
+    expect(mapMarkerOffsets([points[0]])).toEqual([[0, 0]])
+  })
+  it('leidt een ontbrekende geboorteplaats niet af uit de huidige woonplaats', () => {
+    const people = [person('1', 'Haarlem'), { ...person('2'), birthPlace: '  ' }]
+    expect(groupResidences(people, 'birth')).toEqual({ groups: [], missing: people })
+    const birthOnly = { ...person('3'), birthPlace: 'Haarlem' }
+    expect(groupResidences([birthOnly], 'birth').groups[0].people).toEqual([birthOnly])
+  })
+  it('houdt een andere plaats centraal en plaatst alleen overlappende lagen uit elkaar', () => {
+    const group = groupResidences([person('1', 'Haarlem')]).groups[0]
+    const other = groupResidences([{ ...person('2'), birthPlace: 'Haarle' }], 'birth').groups[0]
+    const points = mergeMappedResidences([
+      { group, place: haarlem },
+      { group: other, place: haarle },
+    ])
+    expect(mapMarkerOffsets(points)).toEqual([
+      [0, 0],
+      [0, 0],
     ])
   })
 })

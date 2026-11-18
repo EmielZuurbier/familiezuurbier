@@ -6,7 +6,18 @@ export type PlaceCandidate = {
   label: string
   coordinates: [number, number]
 }
-export type ResidenceGroup = { key: string; label: string; people: Person[] }
+export const mapLayers = [
+  { id: 'residence', label: 'Huidige woonplaats', field: 'currentResidence', color: '#345d49' },
+  { id: 'birth', label: 'Geboorteplaats', field: 'birthPlace', color: '#426b96' },
+] as const
+export type MapLayer = (typeof mapLayers)[number]['id']
+export type ResidenceGroup = {
+  key: string
+  lookupKey: string
+  layer: MapLayer
+  label: string
+  people: Person[]
+}
 export type MappedResidence = { group: ResidenceGroup; place: PlaceCandidate; keys: string[] }
 
 export function mergeMappedResidences(
@@ -14,12 +25,13 @@ export function mergeMappedResidences(
 ): MappedResidence[] {
   const merged = new Map<string, MappedResidence>()
   for (const point of points) {
-    const current = merged.get(point.place.id)
+    const mergeKey = `${point.group.layer}:${point.place.id}`
+    const current = merged.get(mergeKey)
     if (current) {
       current.keys.push(point.group.key)
       current.group.people.push(...point.group.people)
     } else
-      merged.set(point.place.id, {
+      merged.set(mergeKey, {
         ...point,
         keys: [point.group.key],
         group: { ...point.group, people: [...point.group.people] },
@@ -37,17 +49,22 @@ export function normalizePlace(value: string): string {
     .toLocaleLowerCase('nl')
 }
 
-export function groupResidences(people: Person[]): { groups: ResidenceGroup[]; missing: Person[] } {
+export function groupResidences(
+  people: Person[],
+  layer: MapLayer = 'residence',
+): { groups: ResidenceGroup[]; missing: Person[] } {
   const groups = new Map<string, ResidenceGroup>()
   const missing: Person[] = []
   for (const person of people) {
-    const label = person.currentResidence?.trim()
+    const field = mapLayers.find((item) => item.id === layer)!.field
+    const label = person[field]?.trim()
     if (!label) {
       missing.push(person)
       continue
     }
-    const key = normalizePlace(label)
-    const group = groups.get(key) ?? { key, label, people: [] }
+    const lookupKey = normalizePlace(label)
+    const key = `${layer}:${lookupKey}`
+    const group = groups.get(key) ?? { key, lookupKey, layer, label, people: [] }
     group.people.push(person)
     groups.set(key, group)
   }
@@ -126,4 +143,22 @@ export function geocodingURL(place: string, token: string): string {
     permanent: 'false',
   }).toString()
   return url.toString()
+}
+
+// Separate layers at the same coordinates in screen pixels, leaving the real
+// geographic position intact. A single visible layer stays exactly centred.
+export function mapMarkerOffsets(points: MappedResidence[]): [number, number][] {
+  const locations = new Map<string, number[]>()
+  points.forEach((point, index) => {
+    const key = point.place.coordinates.join(',')
+    locations.set(key, [...(locations.get(key) ?? []), index])
+  })
+  const offsets: [number, number][] = points.map(() => [0, 0])
+  for (const indices of locations.values()) {
+    indices.sort((a, b) => points[a].group.layer.localeCompare(points[b].group.layer))
+    indices.forEach((index, position) => {
+      offsets[index] = [(position - (indices.length - 1) / 2) * 42, 0]
+    })
+  }
+  return offsets
 }

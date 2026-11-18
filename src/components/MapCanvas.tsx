@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Map as MapboxMap, Marker } from 'mapbox-gl'
 import { Maximize, RotateCw } from 'lucide-react'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import type { MappedResidence } from '@/lib/residences'
+import { mapLayers, mapMarkerOffsets, type MappedResidence } from '@/lib/residences'
 
 export type MapPoint = MappedResidence
 
@@ -14,6 +14,7 @@ export function MapCanvas({
   focusRequest,
   hasDetail,
   settled,
+  viewKey,
   onSelect,
   onReady,
 }: {
@@ -23,6 +24,7 @@ export function MapCanvas({
   focusRequest: number
   hasDetail: boolean
   settled: boolean
+  viewKey: string
   onSelect: (key: string) => void
   onReady: () => void
 }) {
@@ -32,11 +34,11 @@ export function MapCanvas({
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const fitted = useRef(false)
+  const fitted = useRef<string | null>(null)
 
   useEffect(() => {
     let disposed = false
-    fitted.current = false
+    fitted.current = null
     let observer: ResizeObserver | undefined
     void import('mapbox-gl')
       .then(({ default: mapboxgl }) => {
@@ -58,7 +60,7 @@ export function MapCanvas({
           language: 'nl',
           renderWorldCopies: false,
           locale: {
-            'Map.Title': 'Kaart met woonplaatsen',
+            'Map.Title': 'Kaart met woonplaatsen en geboorteplaatsen',
             'NavigationControl.ZoomIn': 'Inzoomen',
             'NavigationControl.ZoomOut': 'Uitzoomen',
             'AttributionControl.ToggleAttribution': 'Kaartbronnen tonen',
@@ -100,18 +102,23 @@ export function MapCanvas({
     void import('mapbox-gl').then(({ default: mapboxgl }) => {
       if (disposed || !map.current) return
       markers.current.forEach((marker) => marker.remove())
-      markers.current = points.map(({ group, place }) => {
+      const offsets = mapMarkerOffsets(points)
+      markers.current = points.map(({ group, place }, index) => {
         const button = document.createElement('button')
         button.className = 'residence-marker'
         button.type = 'button'
+        button.dataset.layer = group.layer
+        const layer = mapLayers.find((layer) => layer.id === group.layer)!
+        button.title = `${layer.label}: ${group.label}`
+        button.style.backgroundColor = layer.color
         button.textContent = String(group.people.length)
         button.setAttribute(
           'aria-label',
-          `${group.people.length} ${group.people.length === 1 ? 'persoon' : 'personen'} in ${group.label}`,
+          `${group.people.length} ${group.people.length === 1 ? 'persoon' : 'personen'} · ${layer.label}: ${group.label}`,
         )
         button.setAttribute('data-place-key', group.key)
         button.addEventListener('click', () => onSelect(group.key))
-        const marker = new mapboxgl.Marker({ element: button })
+        const marker = new mapboxgl.Marker({ element: button, offset: offsets[index] })
           .setLngLat(place.coordinates)
           .addTo(map.current!)
         // Mapbox labels custom markers as images by default; these are controls.
@@ -141,10 +148,10 @@ export function MapCanvas({
     )
   }, [points])
   useEffect(() => {
-    if (!ready || !settled || fitted.current || !points.length) return
-    fitted.current = true
+    if (!ready || !settled || fitted.current === viewKey) return
+    fitted.current = viewKey
     if (!focused) fitAll()
-  }, [ready, settled, points, fitAll, focused])
+  }, [ready, settled, points, fitAll, focused, viewKey])
   useEffect(() => {
     const place = points.find((p) => focused && p.keys.includes(focused))?.place
     if (ready && place)
@@ -165,7 +172,7 @@ export function MapCanvas({
   }, [focused, focusRequest, hasDetail, points, ready])
 
   return (
-    <div className="family-map-area" aria-label="Kaart met woonplaatsen">
+    <div className="family-map-area" aria-label="Kaart met woonplaatsen en geboorteplaatsen">
       <div ref={container} className="family-map-canvas" data-testid="family-map" />
       {!ready && !error && (
         <div className="map-notice" role="status">
