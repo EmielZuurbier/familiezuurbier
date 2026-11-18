@@ -4,6 +4,7 @@ import { demoFamily } from './demo'
 import { effectiveParentages } from './relations'
 import { databaseConfigured } from './settings'
 import type { Family } from './types'
+import { normalizeStory, storyMediaIds, storyPlainText } from './events/story'
 import { personPhoto } from './person-photo'
 import type { Payload } from 'payload'
 export type FamilyResult =
@@ -27,7 +28,9 @@ async function familyStorage(): Promise<
       config = await import('@payload-config')
     const payload = await getPayload({ config: config.default })
     const { totalDocs } = await payload.count({ collection: 'people', overrideAccess: true })
-    return totalDocs === 0 ? { kind: 'empty' } : { kind: 'filled', payload }
+    if (totalDocs > 0) return { kind: 'filled', payload }
+    const events = await payload.count({ collection: 'events', overrideAccess: true })
+    return events.totalDocs === 0 ? { kind: 'empty' } : { kind: 'filled', payload }
   } catch {
     return { kind: 'error' }
   }
@@ -52,18 +55,24 @@ export async function loadFamily(): Promise<FamilyResult> {
       return { kind: 'private' }
     // Local API bypasses access control by default. Always explicitly enforce it here.
     const access = { depth: 0, pagination: false as const, overrideAccess: false, user }
-    const [people, parentages, partnerships] = await Promise.all([
+    const [people, parentages, partnerships, events] = await Promise.all([
       payload.find({ collection: 'people', ...access }),
       payload.find({ collection: 'parentages', ...access }),
       payload.find({ collection: 'partnerships', ...access }),
+      payload.find({ collection: 'events', ...access }),
     ])
     const id = (v: unknown) => String(typeof v === 'object' && v && 'id' in v ? v.id : v)
+    const eventStories = events.docs.map((event) => normalizeStory(event.story))
     const photoIds = [
-      ...new Set(
-        people.docs.flatMap((person) =>
+      ...new Set([
+        ...people.docs.flatMap((person) =>
           [person.photo, person.avatarPhoto].filter(Boolean).map((photo) => Number(id(photo))),
         ),
-      ),
+        ...events.docs.flatMap((event, index) => [
+          ...storyMediaIds(eventStories[index]),
+          ...(event.cover ? [Number(id(event.cover))] : []),
+        ]),
+      ]),
     ]
     const media = photoIds.length
       ? (
@@ -113,6 +122,25 @@ export async function loadFamily(): Promise<FamilyResult> {
         }),
         parentages: effectiveParentages(manual, pairs),
         partnerships: pairs,
+        events: events.docs.map((event, index) => {
+          const story = eventStories[index]
+          return {
+            id: String(event.id),
+            title: event.title,
+            date: event.date ?? {},
+            place: event.place,
+            people: (event.relatedPeople ?? []).map(id),
+            story,
+            excerpt: storyPlainText(story),
+            cover: event.cover ? personPhoto(photos.get(id(event.cover))) : undefined,
+            images: Object.fromEntries(
+              storyMediaIds(story).flatMap((imageId) => {
+                const photo = personPhoto(photos.get(String(imageId)))
+                return photo ? [[String(imageId), photo]] : []
+              }),
+            ),
+          }
+        }),
       },
     }
   } catch {

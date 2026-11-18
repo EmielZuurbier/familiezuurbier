@@ -105,9 +105,63 @@ describe('Voorbeelden alleen zonder opgeslagen personen', () => {
     expect(await loadFamily()).toEqual({ kind: 'error' })
   })
   it('controleert de vulling opnieuw en houdt de eerste invoer niet verborgen achter een oude demo', async () => {
-    mocks.count.mockResolvedValueOnce({ totalDocs: 0 }).mockResolvedValue({ totalDocs: 1 })
+    mocks.count
+      .mockResolvedValueOnce({ totalDocs: 0 })
+      .mockResolvedValueOnce({ totalDocs: 0 })
+      .mockResolvedValue({ totalDocs: 1 })
     expect(await examplesAvailable()).toBe(true)
     expect(await examplesAvailable()).toBe(false)
     expect(await loadFamily()).toEqual({ kind: 'private' })
+  })
+  it('laadt gebeurtenissen en bijbehorende foto’s alleen met de toegangscontrole van de bezoeker', async () => {
+    const user = { collection: 'family-members', id: 2, status: 'active' }
+    mocks.auth.mockResolvedValue({ user })
+    mocks.find.mockImplementation(async ({ collection }) => ({
+      docs:
+        collection === 'people'
+          ? [{ id: 1, name: 'Testpersoon', lifeStatus: 'unknown' }]
+          : collection === 'events'
+            ? [
+                {
+                  id: 9,
+                  title: 'Verhuisd',
+                  relatedPeople: [1],
+                  cover: 7,
+                  date: { year: 1982 },
+                  story: {
+                    version: 1,
+                    blocks: [
+                      {
+                        name: 'familie/image',
+                        attributes: { mediaId: 7, caption: 'Een foto' },
+                        innerBlocks: [],
+                      },
+                    ],
+                  },
+                },
+              ]
+            : collection === 'media'
+              ? [{ id: 7, filename: 'fictief.webp', width: 100, height: 80 }]
+              : [],
+    }))
+    const result = await loadFamily()
+    expect(result.kind).toBe('ready')
+    if (result.kind === 'ready')
+      expect(result.family.events?.[0]).toMatchObject({
+        id: '9',
+        people: ['1'],
+        cover: { url: '/api/media/file/fictief.webp' },
+        images: { '7': { url: '/api/media/file/fictief.webp' } },
+      })
+    for (const [query] of mocks.find.mock.calls)
+      expect(query).toMatchObject({ overrideAccess: false, user })
+  })
+  it('houdt gebeurtenissen privé en verbergt voorbeelden wanneer nog geen personen bestaan', async () => {
+    mocks.count.mockImplementation(async ({ collection }) => ({
+      totalDocs: collection === 'events' ? 1 : 0,
+    }))
+    expect(await loadFamily()).toEqual({ kind: 'private' })
+    expect(await examplesAvailable()).toBe(false)
+    expect(mocks.find).not.toHaveBeenCalled()
   })
 })

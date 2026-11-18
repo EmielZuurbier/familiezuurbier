@@ -1,3 +1,4 @@
+import type { FamilyEvent } from './events/types'
 import type { AvatarIcon } from './avatars'
 export type PersonPhoto = {
   url: string
@@ -29,4 +30,9 @@ export type Partnership = {
   status: 'current' | 'ended' | 'unknown'
   children?: string[]
 }
-export type Family = { people: Person[]; parentages: Parentage[]; partnerships: Partnership[] }
+export type Family = {
+  people: Person[]
+  parentages: Parentage[]
+  partnerships: Partnership[]
+  events?: FamilyEvent[]
+}

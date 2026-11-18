@@ -351,6 +351,7 @@ export function BirthdayCalendar({
               person={person}
               family={family}
               demo={demo}
+              eventsBase={treeHref}
               onSelect={selectPerson}
               onClose={() => setSelected(null)}
             />

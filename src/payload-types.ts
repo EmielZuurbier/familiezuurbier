@@ -70,6 +70,7 @@ export interface Config {
   collections: {
     administrators: Administrator;
     people: Person;
+    events: Event;
     media: Media;
     partnerships: Partnership;
     parentages: Parentage;
@@ -85,6 +86,7 @@ export interface Config {
   collectionsSelect: {
     administrators: AdministratorsSelect<false> | AdministratorsSelect<true>;
     people: PeopleSelect<false> | PeopleSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     partnerships: PartnershipsSelect<false> | PartnershipsSelect<true>;
     parentages: ParentagesSelect<false> | ParentagesSelect<true>;
@@ -264,6 +266,48 @@ export interface Media {
   };
 }
 /**
+ * Bewaar de familiegeschiedenis. Schrijf een verhaal en koppel de betrokken familieleden.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  /**
+   * Geef de gebeurtenis een herkenbare naam, bijvoorbeeld ‘De verhuizing naar Haarlem’.
+   */
+  title: string;
+  /**
+   * Vul alleen bekende onderdelen in. Laat onbekende velden leeg.
+   */
+  date?: {
+    day?: number | null;
+    month?: number | null;
+    year?: number | null;
+  };
+  place?: string | null;
+  /**
+   * Optioneel. Verschijnt op het kaartje en bovenaan het verhaal.
+   */
+  cover?: (number | null) | Media;
+  /**
+   * Koppel de familieleden die bij dit verhaal horen. Het verschijnt ook bij hun persoonsgegevens.
+   */
+  relatedPeople?: (number | Person)[] | null;
+  story?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  mediaReferences?: (number | Media)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Kies twee partners en voeg hun gezamenlijke kinderen hier één keer toe. Elk partnerschap heeft een eigen kinderenlijst.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -380,6 +424,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'people';
         value: number | Person;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
       } | null)
     | ({
         relationTo: 'media';
@@ -510,6 +558,27 @@ export interface PeopleSelect<T extends boolean = true> {
         year?: T;
       };
   deathPlace?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  date?:
+    | T
+    | {
+        day?: T;
+        month?: T;
+        year?: T;
+      };
+  place?: T;
+  cover?: T;
+  relatedPeople?: T;
+  story?: T;
+  mediaReferences?: T;
   updatedAt?: T;
   createdAt?: T;
 }

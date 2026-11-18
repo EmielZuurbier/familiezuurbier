@@ -7,6 +7,7 @@ import { Administrators, People, Parentages, Partnerships } from './collections/
 import { FamilyMembers, FamilySessions, FamilyRateLimits } from './collections/family-accounts'
 import { familyEmail } from './lib/family-auth/mail'
 import sharp from 'sharp'
+import { Events } from './collections/events'
 import { Media } from './collections/media'
 import { familyBrand } from './lib/branding'
 const dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -23,6 +24,7 @@ export default buildConfig({
   collections: [
     Administrators,
     People,
+    Events,
     Media,
     Partnerships,
     Parentages,

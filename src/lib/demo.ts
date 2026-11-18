@@ -1,3 +1,4 @@
+import { demoEvents } from './demo-events'
 import type { Family, Person } from './types'
 function person(
   id: string,
@@ -17,6 +18,7 @@ function person(
 }
 // Alle namen, datums en verbindingen zijn fictief; geen transcriptie van de familiefoto.
 export const demoFamily: Family = {
+  events: demoEvents,
   people: [
     person('1', 'Willem Voorbeeld', 1920, 'deceased', 1996),
     person('2', 'Anna van de Linde', 1923, 'deceased', 2008),

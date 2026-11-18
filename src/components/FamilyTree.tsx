@@ -15,6 +15,7 @@ import {
   type NodeProps,
 } from '@xyflow/react'
 import {
+  BookOpen,
   ArrowDown,
   ArrowLeft,
   ArrowUpRight,
@@ -63,6 +64,7 @@ import { organicParentagePaths } from '@/lib/organic-connections'
 import { ParentageEdge } from './ParentageEdge'
 import { PartnershipEdge } from './PartnershipEdge'
 import { age, formatDate, years } from '@/lib/dates'
+import { eventHref, eventsForPerson } from '@/lib/events/timeline'
 import { childOrder } from '@/lib/child-order'
 import {
   constrainViewport,
@@ -964,6 +966,7 @@ function TreeView({
               family={family}
               demo={demo}
               onSelect={selectPerson}
+              eventsBase={persistent ? '/' : preview ? '/voorvertoning' : '/voorbeeld'}
               onFocusFamily={focusFamily}
               onClose={() => {
                 if (focusedFamily) focusFamily(focusedFamily)
@@ -1000,12 +1003,16 @@ export function PersonDetail({
   onSelect,
   onClose,
   onFocusFamily,
+  eventsBase = '/',
+  onEventSelect,
 }: {
   person: Person
   family: Family
   demo: boolean
   onSelect: (id: string) => void
   onClose: () => void
+  onEventSelect?: (id: string) => void
+  eventsBase?: string
   onFocusFamily?: (group: FamilyFocus) => void
 }) {
   const headingRef = useRef<HTMLButtonElement>(null)
@@ -1028,6 +1035,7 @@ export function PersonDetail({
     ),
   ]
   siblings.sort(childOrder(family, parents))
+  const personEvents = eventsForPerson(family.events, person.id)
   const a = age(person)
   const focusOptions = onFocusFamily ? familyFocusOptions(family, person.id) : []
   function relative(id: string, note?: string) {
@@ -1127,6 +1135,38 @@ export function PersonDetail({
             </div>
           )}
         </div>
+        {!!personEvents.length && (
+          <section className="relatives-section person-events">
+            <h3>
+              <BookOpen size={15} />
+              Gebeurtenissen <span>{personEvents.length}</span>
+            </h3>
+            {personEvents.map((event) => (
+              <Link
+                className="relative"
+                href={eventHref(eventsBase, event.id)}
+                onClick={
+                  onEventSelect
+                    ? (e) => {
+                        e.preventDefault()
+                        onEventSelect(event.id)
+                      }
+                    : undefined
+                }
+                key={event.id}
+              >
+                <span className="person-event-icon">
+                  <BookOpen size={17} />
+                </span>
+                <span>
+                  <strong>{event.title}</strong>
+                  <small>{formatDate(event.date)}</small>
+                </span>
+                <ChevronRight size={16} />
+              </Link>
+            ))}
+          </section>
+        )}
         {!!parents.length && (
           <div className="relatives-section">
             <h3>

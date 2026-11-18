@@ -41,15 +41,23 @@ export const Media: CollectionConfig = {
     beforeDelete: [
       async ({ id, req }) => {
         await relationLock(req)
-        const people = await req.payload.count({
-          collection: 'people',
-          where: { or: [{ photo: { equals: id } }, { avatarPhoto: { equals: id } }] },
-          overrideAccess: true,
-          req,
-        })
-        if (people.totalDocs)
+        const [people, events] = await Promise.all([
+          req.payload.count({
+            collection: 'people',
+            where: { or: [{ photo: { equals: id } }, { avatarPhoto: { equals: id } }] },
+            overrideAccess: true,
+            req,
+          }),
+          req.payload.count({
+            collection: 'events',
+            where: { mediaReferences: { in: [id] } },
+            overrideAccess: true,
+            req,
+          }),
+        ])
+        if (people.totalDocs || events.totalDocs)
           throw new APIError(
-            'Deze afbeelding is nog gekoppeld aan een persoon. Haal de foto eerst bij die persoon weg of kies een andere foto.',
+            'Deze afbeelding is nog gekoppeld aan een persoon of gebeurtenis. Haal de foto eerst daar weg of kies een andere foto.',
             400,
           )
       },

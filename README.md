@@ -70,7 +70,7 @@ De aanwijzer is begrensd gekoppeld aan de beschikbare schemaruimte. In beide ind
 
 De telefoonopmaak is op 390 × 844 bekeken. Gebaren op een fysiek aanraakscherm zijn nog niet handmatig gecontroleerd.
 
-De drie weergaven gebruiken dezelfde kop met navigatie, dezelfde zijbalkbreedte en dezelfde beginhoogte voor de ondertitel. De opslagvermelding en hulpknop van de stamboom staan vóór de navigatie. Op kleinere schermen krijgt de navigatie in elke weergave dezelfde tweede rij. De kalenderdropdowns hebben een eigen pijltje met ruimte tot de rand; het blijven gewone, met het toetsenbord bedienbare selecties.
+De vier weergaven gebruiken dezelfde kop met navigatie, dezelfde zijbalkbreedte en dezelfde beginhoogte voor de ondertitel. De opslagvermelding en hulpknop van de stamboom staan vóór de navigatie. Op kleinere schermen krijgt de navigatie in elke weergave dezelfde tweede rij. De kalenderdropdowns hebben een eigen pijltje met ruimte tot de rand; het blijven gewone, met het toetsenbord bedienbare selecties.
 
 ## Familie op de kaart
 
@@ -193,7 +193,7 @@ Opgeslagen personen, relaties en de familiekaart zijn uitsluitend zichtbaar voor
 
 ### Google Tag Manager
 
-Container **GTM-T37ZTN97** is gekoppeld aan de gewone stamboom, kaart en verjaardagskalender. De container wordt na de toegangscontrole geladen, via `next/script` met `afterInteractive`. De app voegt geen familienamen, geboortedatums, woonplaatsen, e-mailadressen of inloggegevens aan de meetlaag toe; de standaard containerstart bevat alleen een tijdstip en het opstartevent.
+Container **GTM-T37ZTN97** is gekoppeld aan de gewone stamboom, kaart, verjaardagskalender en gebeurtenissen. De container wordt na de toegangscontrole geladen, via `next/script` met `afterInteractive`. De app voegt geen familienamen, geboortedatums, woonplaatsen, e-mailadressen of inloggegevens aan de meetlaag toe; de standaard containerstart bevat alleen een tijdstip en het opstartevent.
 
 Het inlogscherm, de besloten toegangsmelding, accountbeheer en het CMS laden de container niet. Navigatie naar accountbeheer en terug vanaf het inlogscherm laadt een nieuwe pagina, zodat een eerder geladen container niet op die schermen achterblijft. De losse voorbeeldroutes laden de container evenmin; de gewone homepage bij een lege database wel.
 
@@ -323,3 +323,15 @@ Officiële referenties: [Payload installeren](https://payloadcms.com/docs/gettin
 De voorvertoning gebruikt daarnaast `src/lib/focus.ts` voor stamfocus en `src/lib/connections.ts` met `src/components/ParentageEdge.tsx` en `PartnershipEdge.tsx` voor de gebogen verbindingen. `tests/upward-layout.test.ts` controleert richting, takruimte, partners, losse personen en determinisme. Het gegevensmodel, de database en de bestaande `src/lib/pan.ts` zijn voor dit ontwerp niet gewijzigd.
 
 De gezamenlijke kinderenlijst gebruikt `src/lib/relations.ts` voor de effectieve ouder-kindverbindingen en `scripts/lib/convert-children.ts` voor de gecontroleerde omzetting. Het beheer toont gezamenlijke kinderen bij Partnerschappen en afzonderlijk ouderschap bij Losse ouder-kindrelaties. De grafische indeling en muisbediening zijn daarbij niet aangepast.
+
+## Gebeurtenissen en verhalen
+
+**Gebeurtenissen** is het vierde familieoverzicht. De tijdlijn toont de nieuwste gebeurtenissen bovenaan; verhalen zonder jaartal staan onderaan. Zoek op titel, verhaal, plaats of een gekoppeld familielid, of filter op jaar en betrokken persoon. Een kaartje opent het volledige verhaal via `/gebeurtenissen?event=…`. Vanuit het verhaal open je de persoonsgegevens; daar staat een lijst met alle gekoppelde gebeurtenissen. Terugnavigeren in de browser blijft werken. Verhalen vallen onder dezelfde afscherming als de stamboom. Voorbeelden verschijnen uitsluitend wanneer zowel personen als gebeurtenissen ontbreken; een niet bereikbare database geeft geen vervangende voorbeelden.
+
+In **CMS → Gebeurtenissen** maak je een titel, een eventueel onvolledige datum, een optionele plaats met de bestaande plaatszoekhulp, een optionele omslagfoto en betrokken personen aan. Er zijn geen soort- of deelnemersvelden. Familieleden hebben alleen leesrechten; beheerders beheren de verhalen.
+
+Het veld **Verhaal** gebruikt de zelfstandige Gutenberg-editor, geladen bij het bewerken van gebeurtenissen. Beschikbare blokken: alinea, tussenkop (niveau 2–4), lijst, citaat, scheidingslijn, afbeelding en fotogalerij. Met de blokwerkbalk wijzig je de volgorde of verwijder je een blok. Eigen knoppen bieden ongedaan maken en opnieuw. Afbeeldingen hebben een bijschrift en optionele beschrijving; de mediakiezer ondersteunt bestaande foto’s en nieuwe JPG-, PNG- en WebP-uploads tot 10 MB. Een galerij bevat afbeeldingsblokken die je afzonderlijk kunt ordenen en van een bijschrift voorzien. Er is geen WordPress-installatie nodig.
+
+De opslag is JSON met een expliciete formaatversie en verwijzingen naar Payload-media. De server controleert ondersteunde blokken, afmetingen van de blokstructuur en bestaande afbeeldingen. Alleen toegestane inline HTML wordt bewaard; scripts, willekeurige HTML, externe afbeeldings-URL’s en editoridentificaties worden verwijderd of geweigerd. Foto’s worden via de afgeschermde bestandsroute getoond, zonder openbare afbeeldingproxy. Het verwijderen van gekoppelde personen of afbeeldingen wordt geweigerd totdat hun koppelingen bewust zijn weggehaald. Ook wijzigingen in deze koppelingen gebruiken de bestaande transactievergrendeling.
+
+De migratie `20261118_123225_gebeurtenissen` voegt uitsluitend de gebeurtenissentabellen, relaties en bijbehorende indexen toe. Voer bij een productie-update zoals gebruikelijk `npm run payload -- migrate` uit vóór het starten van de nieuwe applicatie. De migratie en het terugdraaien daarvan zijn in een geïsoleerde testdatabase gecontroleerd. De JSON-familie-export bevat nu ook gebeurtenissen (schemaVersion 3); een volledige databaseback-up bevat eveneens alle verhalen. Uploadbestanden blijven onderdeel van de afzonderlijke mediaback-up.

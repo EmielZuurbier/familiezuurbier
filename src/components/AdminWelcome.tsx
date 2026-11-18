@@ -20,6 +20,10 @@ export function AdminWelcome() {
         bekende datums in. Vink ‘Overleden’ alleen aan wanneer dat bekend is. Wijzigingen
         verschijnen bij het opnieuw openen of vernieuwen van de stamboom.
       </p>
+      <p>
+        Bij <strong>Gebeurtenissen</strong> bewaar je verhalen met foto’s en gekoppelde
+        familieleden. Gebruik + in de verhaleneditor om blokken toe te voegen.
+      </p>
       <Link href="/">← Bekijk de stamboom</Link>
       <p>
         <Link href="/toegang">Familieleden uitnodigen en toegang beheren →</Link>

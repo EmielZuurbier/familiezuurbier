@@ -25,7 +25,7 @@ export async function relationLock(req: PayloadRequest) {
   // Serialize relationship edits and person deletions, including concurrent requests.
   await db.sessions[transactionID].db.execute(sql`SELECT pg_advisory_xact_lock(1947162026)`)
 }
-function dateFields(name: string, label: string): Field {
+export function dateFields(name: string, label: string): Field {
   return {
     name,
     label,
@@ -166,7 +166,7 @@ export const People: CollectionConfig = {
     beforeDelete: [
       async ({ id, req }) => {
         await relationLock(req)
-        const [parents, partners] = await Promise.all([
+        const [parents, partners, events] = await Promise.all([
           req.payload.count({
             collection: 'parentages',
             where: { or: [{ parent: { equals: id } }, { child: { equals: id } }] },
@@ -185,10 +185,16 @@ export const People: CollectionConfig = {
             req,
             overrideAccess: true,
           }),
+          req.payload.count({
+            collection: 'events',
+            where: { relatedPeople: { in: [id] } },
+            req,
+            overrideAccess: true,
+          }),
         ])
-        if (parents.totalDocs || partners.totalDocs)
+        if (parents.totalDocs || partners.totalDocs || events.totalDocs)
           fail(
-            'Verwijder eerst de koppelingen bij partnerschappen en losse ouder-kindrelaties van deze persoon.',
+            'Verwijder eerst de koppelingen bij gebeurtenissen, partnerschappen en losse ouder-kindrelaties van deze persoon.',
           )
       },
     ],

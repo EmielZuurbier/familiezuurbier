@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { CalendarDays, GitBranch, MapPin } from 'lucide-react'
+import { CalendarDays, GitBranch, MapPin, BookOpen } from 'lucide-react'
 
 export function ViewNavigation({
   active,
   treeHref,
   mapHref,
 }: {
-  active: 'tree' | 'map' | 'calendar'
+  active: 'tree' | 'map' | 'calendar' | 'events'
   treeHref: string
   mapHref: string
 }) {
@@ -29,6 +29,17 @@ export function ViewNavigation({
         <span className="calendar-full-label">Verjaardagskalender</span>
         <span className="calendar-short-label" aria-hidden="true">
           Verjaardagen
+        </span>
+      </Link>
+      <Link
+        href={treeHref === '/' ? '/gebeurtenissen' : `${treeHref}/gebeurtenissen`}
+        aria-current={active === 'events' ? 'page' : undefined}
+        aria-label="Gebeurtenissen"
+      >
+        <BookOpen size={15} />
+        <span className="events-full-label">Gebeurtenissen</span>
+        <span className="events-short-label" aria-hidden="true">
+          Verhalen
         </span>
       </Link>
     </nav>

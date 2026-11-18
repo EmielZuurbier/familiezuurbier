@@ -5,14 +5,14 @@ import { databaseConfigured } from '../src/lib/settings'
 if (!databaseConfigured()) throw new Error('Stel eerst DATABASE_URL en PAYLOAD_SECRET in .env in.')
 const payload = await getPayload({ config })
 try {
-  const collections = ['people', 'parentages', 'partnerships'] as const
+  const collections = ['people', 'parentages', 'partnerships', 'events'] as const
   const rows = await Promise.all(
     collections.map((collection) =>
       payload.find({ collection, depth: 0, pagination: false, overrideAccess: true }),
     ),
   )
   const content = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     exportedAt: new Date().toISOString(),
     ...Object.fromEntries(collections.map((key, i) => [key, rows[i].docs])),
   }
