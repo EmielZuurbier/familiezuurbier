@@ -3,6 +3,7 @@
 // It is only reachable in development and never opens the administrator interface.
 import { useRef, useState } from 'react'
 import { UPWARD_BOTTOM_PADDING } from '@/lib/focus'
+import { PAN_SPEEDS } from '@/lib/pan'
 export function InteractionCheck({ source = '/' }: { source?: string }) {
   const frame = useRef<HTMLIFrameElement>(null)
   const [result, setResult] = useState('Nog niet uitgevoerd')
@@ -77,6 +78,40 @@ export function InteractionCheck({ source = '/' }: { source?: string }) {
         [...doc.querySelectorAll<HTMLElement>('.react-flow__node')].map((node) =>
           node.getBoundingClientRect(),
         )
+      const speedSelect = doc.querySelector<HTMLSelectElement>(
+        '[aria-label="Snelheid van muisbeweging"]',
+      )!
+      const changeSpeed = async (speed: number) => {
+        speedSelect.value = String(speed)
+        speedSelect.dispatchEvent(new Event('change', { bubbles: true }))
+        await nextFrame()
+      }
+      const responses: { x: number; y: number }[] = []
+      for (const speed of Object.values(PAN_SPEEDS)) {
+        await changeSpeed(speed)
+        resetAnchor()
+        pointer(canvas, x, y)
+        await nextFrame()
+        const before = transform()
+        pointer(canvas, x + 6, y + 6)
+        await nextFrame()
+        const after = transform()
+        responses.push({ x: before.m41 - after.m41, y: before.m42 - after.m42 })
+        pointer(canvas, x, y)
+        await nextFrame()
+      }
+      for (const axis of ['x', 'y'] as const) {
+        assert(responses[0][axis] > 0, `Rustige stand beweegt niet op ${axis}`)
+        assert(
+          Math.abs(responses[1][axis] / responses[0][axis] - 2) < 0.02,
+          `Te weinig verschil tussen Rustig en Normaal op ${axis}`,
+        )
+        assert(
+          Math.abs(responses[2][axis] / responses[1][axis] - 2) < 0.02,
+          `Te weinig verschil tussen Normaal en Vlot op ${axis}`,
+        )
+      }
+      await changeSpeed(PAN_SPEEDS.normal)
       const checkDirection = async (dx: number, dy: number, label: string) => {
         resetAnchor()
         pointer(canvas, x, y)
@@ -122,11 +157,18 @@ export function InteractionCheck({ source = '/' }: { source?: string }) {
       }
       await checkConstantSteps('x')
       await checkConstantSteps('y')
-      resetAnchor()
-      pointer(canvas, x, y)
-      await nextFrame()
-      pointer(canvas, rect.width - pointerX, pointerY)
-      await nextFrame()
+      const reachCorner = async (targetX: number, targetY: number) => {
+        // Lower speeds deliberately cover less ground per sweep. Re-entering
+        // the interior continues toward the same padded boundary without a jump.
+        for (let sweep = 0; sweep < 8; sweep++) {
+          resetAnchor()
+          pointer(canvas, x, y)
+          await nextFrame()
+          pointer(canvas, targetX, targetY)
+          await nextFrame()
+        }
+      }
+      await reachCorner(rect.width - pointerX, pointerY)
       let cards = nodeRects()
       assert(
         Math.abs(Math.max(...cards.map((r) => r.right)) - (rect.right - marginX)) < 2,
@@ -136,8 +178,7 @@ export function InteractionCheck({ source = '/' }: { source?: string }) {
         Math.abs(Math.min(...cards.map((r) => r.top)) - (rect.top + marginY)) < 2,
         'Bovenste kaart onbereikbaar',
       )
-      pointer(canvas, pointerX, rect.height - pointerY)
-      await nextFrame()
+      await reachCorner(pointerX, rect.height - pointerY)
       cards = nodeRects()
       assert(
         Math.abs(Math.min(...cards.map((r) => r.left)) - (rect.left + marginX)) < 2,
@@ -257,7 +298,7 @@ export function InteractionCheck({ source = '/' }: { source?: string }) {
       await nextFrame()
       assert(transform().toString() === manualPause, 'Handmatige pauze is niet behouden')
       setResult(
-        `GESLAAGD (${style}) OP ${source}: constante muisverplaatsing, extra witruimte, uitersten bereikbaar zonder de muisrand, richtingen, stilstand, touch, pauze, trackpad, knoppen, persoonsfocus, selectie pauzeert, wisselen blijft gepauzeerd, deselecteren hervat zonder sprong, handmatige pauze blijft behouden en alleen ingevulde oudersecties zichtbaar.`,
+        `GESLAAGD (${style}) OP ${source}: drie lagere snelheden met verhouding 1:2:4, constante muisverplaatsing, extra witruimte, bereikbare uitersten, richtingen, stilstand, touch, pauze, trackpad, knoppen, persoonsfocus, selectie pauzeert, wisselen blijft gepauzeerd, deselecteren hervat zonder sprong, handmatige pauze blijft behouden en alleen ingevulde oudersecties zichtbaar.`,
       )
     } catch (error) {
       setResult('MISLUKT: ' + (error as Error).message)

@@ -3,7 +3,13 @@ import { dateError, dateOrderError, age, formatDate, years } from '../src/lib/da
 import { demoFamily } from '../src/lib/demo'
 import { layoutFamily, CARD_WIDTH, CARD_HEIGHT } from '../src/lib/layout'
 import { parentageError, relationKey } from '../src/lib/relations'
-import { panViewport, constrainViewport, type PanSample, type PanAnchor } from '../src/lib/pan'
+import {
+  panViewport,
+  constrainViewport,
+  PAN_SPEEDS,
+  type PanSample,
+  type PanAnchor,
+} from '../src/lib/pan'
 import type { Family, Person } from '../src/lib/types'
 const person = (id: string): Person => ({
   id,
@@ -198,7 +204,7 @@ describe('muis verkent tegengesteld en bereikt de uitersten', () => {
     expect(move(500, 330).viewport!.y).toBeGreaterThan(view.y)
   })
   it('geeft gelijke muisstappen dezelfde verplaatsing, ook door het midden en bij omkeren', () => {
-    for (const speed of [0.3, 0.5, 0.8])
+    for (const speed of Object.values(PAN_SPEEDS))
       for (const zoom of [0.65, 1, 1.65])
         for (const axis of ['x', 'y'] as const) {
           // Deliberately off-centre camera: the old two half-curves had different gains here.
@@ -218,6 +224,30 @@ describe('muis verkent tegengesteld en bereikt de uitersten', () => {
           for (const ratio of ratios) expect(ratio).toBeCloseTo(ratios[0], 8)
         }
   })
+  it('maakt alle drie de standen trager en geeft iedere volgende stand tweemaal de verplaatsing', () => {
+    for (const axis of ['x', 'y'] as const) {
+      const distances = Object.values(PAN_SPEEDS).map((speed) => {
+        const a = panViewport(null, sample, view, bounds, size, speed).anchor!
+        const next = panViewport(
+          a,
+          { ...sample, point: { ...sample.point, [axis]: sample.point[axis] + 10 } },
+          view,
+          bounds,
+          size,
+          speed,
+        )
+        return Math.abs(next.viewport![axis] - view[axis])
+      })
+      expect(distances[0]).toBeGreaterThan(0)
+      expect(distances[1]).toBeCloseTo(distances[0] * 2)
+      expect(distances[2]).toBeCloseTo(distances[1] * 2)
+      // The old presets moved 33+/40+/50+ horizontal pixels for this 10px step.
+      // Both axes must now stay below those former gains.
+      expect(distances[0]).toBeLessThan(15)
+      expect(distances[1]).toBeLessThan(30)
+      expect(distances[2]).toBeLessThan(60)
+    }
+  })
   it('telt snelle muisgebeurtenissen op zonder verplaatsing te verliezen tussen beeldframes', () => {
     const a = anchor()
     const first = move(510, 350, a)
@@ -227,8 +257,17 @@ describe('muis verkent tegengesteld en bereikt de uitersten', () => {
     expect(second.viewport!.x).toBeCloseTo(move(520, 350, a).viewport!.x, 8)
   })
   it('reageert na een begrenzing direct op omkeren zonder een dode muiszone', () => {
-    const a = anchor(),
-      end = move(size.width, 350, a)
+    const edge = constrainViewport({ ...view, x: -9999 }, bounds, size)
+    const a = panViewport(null, sample, edge, bounds, size, PAN_SPEEDS.normal).anchor!
+    const end = panViewport(
+      a,
+      { ...sample, point: { x: size.width, y: 350 } },
+      edge,
+      bounds,
+      size,
+      PAN_SPEEDS.normal,
+    )
+    expect(end.viewport!.x).toBe(edge.x)
     const back = panViewport(
       end.anchor,
       { ...sample, point: { x: size.width - 1, y: 350 } },
@@ -239,13 +278,25 @@ describe('muis verkent tegengesteld en bereikt de uitersten', () => {
     )
     expect(back.viewport!.x - end.viewport!.x).toBeCloseTo(a.gain.x)
   })
-  it('toont de volledige buitenste kaarten met witruimte, ruim voor de muisrand, bij elke snelheid en zoom', () => {
-    for (const speed of [0.3, 0.5, 0.8])
+  it('houdt de buitenste kaarten met witruimte bereikbaar, ook met meerdere rustige muisbewegingen', () => {
+    for (const speed of Object.values(PAN_SPEEDS))
       for (const zoom of [0.65, 1, 1.65]) {
         const current = constrainViewport({ ...view, zoom }, bounds, size)
-        const a = panViewport(null, sample, current, bounds, size, speed).anchor!
-        const corner = (x: number, y: number) =>
-          panViewport(a, { ...sample, point: { x, y } }, current, bounds, size, speed).viewport!
+        const corner = (x: number, y: number) => {
+          let viewport = current
+          for (let sweep = 0; sweep < 8; sweep++) {
+            const a = panViewport(null, sample, viewport, bounds, size, speed).anchor!
+            viewport = panViewport(
+              a,
+              { ...sample, point: { x, y } },
+              viewport,
+              bounds,
+              size,
+              speed,
+            ).viewport!
+          }
+          return viewport
+        }
         const leftBottom = corner(140, size.height - 140),
           rightTop = corner(size.width - 140, 140)
         expect(bounds.x * zoom + leftBottom.x).toBeCloseTo(112)
@@ -326,22 +377,25 @@ describe('muis verkent tegengesteld en bereikt de uitersten', () => {
   it('houdt op een klein scherm bruikbare ruimte aan zonder een passend schema te laten zweven', () => {
     const mobile = { width: 390, height: 550 }
     const current = constrainViewport(view, bounds, mobile)
-    const anchor = panViewport(
-      null,
-      { ...sample, point: { x: 195, y: 275 } },
-      current,
-      bounds,
-      mobile,
-      0.5,
-    ).anchor!
-    const far = panViewport(
-      anchor,
-      { ...sample, point: { x: 292.5, y: 412.5 } },
-      current,
-      bounds,
-      mobile,
-      0.5,
-    ).viewport!
+    let far = current
+    for (let sweep = 0; sweep < 8; sweep++) {
+      const anchor = panViewport(
+        null,
+        { ...sample, point: { x: 195, y: 275 } },
+        far,
+        bounds,
+        mobile,
+        PAN_SPEEDS.normal,
+      ).anchor!
+      far = panViewport(
+        anchor,
+        { ...sample, point: { x: 292.5, y: 412.5 } },
+        far,
+        bounds,
+        mobile,
+        PAN_SPEEDS.normal,
+      ).viewport!
+    }
     expect(bounds.x + bounds.width + far.x).toBeCloseTo(312)
     expect(bounds.y + bounds.height + far.y).toBeCloseTo(440)
     const small = { x: 0, y: 0, width: 212, height: 98 }

@@ -2,6 +2,7 @@ export type Point = { x: number; y: number }
 export type Viewport = Point & { zoom: number }
 export type CanvasSize = { width: number; height: number }
 export type Bounds = Point & CanvasSize
+export const PAN_SPEEDS = { slow: 0.25, normal: 0.5, fast: 1 } as const
 export type PanSample = {
   point: Point
   pointerType: string
@@ -54,21 +55,22 @@ function axisGain(
   const near = padding - start * zoom
   const far = size - padding - (start + length) * zoom
   const inset = pointerPadding(size)
-  // Interior anchors reach both ends before the pointer reaches the border.
+  // The full-range baseline uses a pointer band inside the canvas border.
   // Keep a short movement range when entering in that outer margin, so the
   // first small movement cannot snap the view to an absolute endpoint.
   const minimumTravel = Math.min(64, size / 6)
   const toNear = Math.max(minimumTravel, anchorPoint - inset)
   const toFar = Math.max(minimumTravel, size - inset - anchorPoint)
   // Use the SAME gain in both directions for this entire interaction. The
-  // larger required distance keeps either extreme reachable inside the canvas.
+  // larger required distance defines the full-range baseline. Slower presets
+  // deliberately cover less distance per sweep; they never speed up near edges.
   // Speed changes this constant, never the shape of the response curve.
   return (
     Math.max(
       (near - far) / (size - inset * 2),
       Math.max(0, near - anchorTranslation) / toNear,
       Math.max(0, anchorTranslation - far) / toFar,
-    ) * Math.max(1, 0.7 + speed)
+    ) * Math.max(0.05, speed)
   )
 }
 

@@ -64,7 +64,13 @@ import { ParentageEdge } from './ParentageEdge'
 import { PartnershipEdge } from './PartnershipEdge'
 import { age, formatDate, years } from '@/lib/dates'
 import { childOrder } from '@/lib/child-order'
-import { constrainViewport, panViewport, type PanAnchor, type Viewport } from '@/lib/pan'
+import {
+  constrainViewport,
+  panViewport,
+  PAN_SPEEDS,
+  type PanAnchor,
+  type Viewport,
+} from '@/lib/pan'
 import type { Family, Person } from '@/lib/types'
 import { WorkspaceHeader } from './WorkspaceHeader'
 import { LifeStatusIcon } from './LifeStatusIcon'
@@ -168,7 +174,7 @@ function TreeView({
   const [compactCanvas, setCompactCanvas] = useState(false)
   const [minimumZoom, setMinimumZoom] = useState(0.16)
   const [panEnabled, setPanEnabled] = useState(true),
-    [speed, setSpeed] = useState(0.5),
+    [speed, setSpeed] = useState<number>(PAN_SPEEDS.normal),
     [help, setHelp] = useState(false),
     [zoom, setZoom] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -909,9 +915,9 @@ function TreeView({
                   setSpeed(Number(e.target.value))
                 }}
               >
-                <option value={0.3}>Rustig</option>
-                <option value={0.5}>Normaal</option>
-                <option value={0.8}>Vlot</option>
+                <option value={PAN_SPEEDS.slow}>Rustig</option>
+                <option value={PAN_SPEEDS.normal}>Normaal</option>
+                <option value={PAN_SPEEDS.fast}>Vlot</option>
               </select>
             </div>
           </div>
