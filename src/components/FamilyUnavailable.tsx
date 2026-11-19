@@ -1,22 +1,26 @@
 import Link from 'next/link'
-import { familyBrand } from '@/lib/branding'
+import { getSiteSettings } from '@/lib/get-site-settings'
+import { siteText } from '@/lib/site-settings'
+import { FamilyBrand } from './FamilyBrand'
 
-export function FamilyUnavailable({ kind }: { kind: 'private' | 'setup' | 'error' }) {
+export async function FamilyUnavailable({ kind }: { kind: 'private' | 'setup' | 'error' }) {
+  const settings = await getSiteSettings()
   const title =
     kind === 'private'
-      ? `De familie ${familyBrand.surname} blijft privé`
+      ? siteText(settings.login.privateTitle, settings)
       : kind === 'setup'
         ? 'Nog even instellen'
         : 'De stamboom is even niet beschikbaar'
   const description =
     kind === 'private'
-      ? 'Deze gegevens zijn alleen voor uitgenodigde familieleden. Log in met je e-mailadres om de stamboom en kaart te bekijken.'
+      ? siteText(settings.login.privateDescription, settings)
       : kind === 'setup'
         ? 'Volg README.md om de database en geheime sleutel in te stellen.'
         : 'De database kon niet worden gelezen. Controleer of PostgreSQL draait en vernieuw daarna de pagina.'
   return (
     <main className="gate">
-      <span className="eyebrow">{familyBrand.name.toUpperCase()}</span>
+      <FamilyBrand fullNavigation />
+      <span className="eyebrow">{settings.identity.name.toUpperCase()}</span>
       <h1>{title}</h1>
       <p>{description}</p>
       <a className="primary" href={kind === 'private' ? '/inloggen' : '/admin'}>

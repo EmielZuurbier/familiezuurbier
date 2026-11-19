@@ -16,7 +16,9 @@ import type { Family } from '@/lib/types'
 import { eventOrder } from '@/lib/events/timeline'
 import { formatDate } from '@/lib/dates'
 import { FamilyBrand } from '../FamilyBrand'
-import { familyBrand } from '@/lib/branding'
+import { useSiteSettings } from '../SiteSettingsProvider'
+import { SidebarHeading } from '../SidebarHeading'
+import { siteText } from '@/lib/site-settings'
 import { FamilyAccountControls, type FamilyViewer } from '../FamilyAccountControls'
 import { WorkspaceHeader } from '../WorkspaceHeader'
 import { PersonDetail } from '../FamilyTree'
@@ -37,6 +39,7 @@ export function EventsOverview({
   initialEvent?: string
 }) {
   const scroll = useRef<HTMLDivElement>(null)
+  const settings = useSiteSettings()
   const [query, setQuery] = useState('')
   const [year, setYear] = useState('all')
   const [personFilter, setPersonFilter] = useState('all')
@@ -96,15 +99,7 @@ export function EventsOverview({
     <main className="app-shell events-shell">
       <aside className="sidebar events-sidebar">
         <FamilyBrand href={treeHref} />
-        <div className="sidebar-heading">
-          <span className="eyebrow">VERHALEN DIE ONS VERBINDEN</span>
-          <h1>
-            {demo ? 'Onze gedeelde' : 'Familie'}
-            <br />
-            <em>{demo ? 'herinneringen.' : `${familyBrand.surname}.`}</em>
-          </h1>
-          <p>Grote momenten en kleine verhalen. Bewaard voor de volgende generatie.</p>
-        </div>
+        <SidebarHeading module="events" demo={demo} />
         <div className="search-area">
           <label htmlFor="events-search">Zoek in de familiegeschiedenis</label>
           <div className="search-field">
@@ -163,7 +158,9 @@ export function EventsOverview({
                   Alle gebeurtenissen
                 </button>
                 <header>
-                  <span className="eyebrow">EEN VERHAAL UIT ONZE FAMILIE</span>
+                  <span className="eyebrow">
+                    {siteText(settings.shared.eventEyebrow, settings)}
+                  </span>
                   <h1>{event.title}</h1>
                   <div className="event-meta">
                     <span>
@@ -288,14 +285,16 @@ export function EventsOverview({
                         aria-label={`Lees ${event.title}`}
                       >
                         {event.cover && (
-                          <Image
-                            unoptimized
-                            src={event.cover.url}
-                            alt=""
-                            className="event-card-photo"
-                            width={500}
-                            height={300}
-                          />
+                          <span className="event-card-photo-frame">
+                            <Image
+                              unoptimized
+                              fill
+                              src={event.cover.url}
+                              alt=""
+                              className="event-card-photo"
+                              sizes="(max-width: 600px) 100vw, 260px"
+                            />
+                          </span>
                         )}
                         <span className="event-card-content">
                           <span className="event-meta">

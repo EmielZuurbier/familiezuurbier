@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import config from '@payload-config'
 import '@payloadcms/next/css'
+import '@/components/admin/admin.scss'
+import { getSiteSettings } from '@/lib/get-site-settings'
+import { siteVariables } from '@/lib/site-settings'
 import type { ServerFunctionClient } from 'payload'
 import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts'
 import { importMap } from './admin/importMap'
@@ -10,7 +13,7 @@ const serverFunction: ServerFunctionClient = async (args) => {
   if (!databaseConfigured()) throw new Error('Database nog niet ingesteld.')
   return handleServerFunctions({ ...args, config, importMap })
 }
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
   if (!databaseConfigured())
     return (
       <html lang="nl">
@@ -29,8 +32,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </body>
       </html>
     )
+  const settings = await getSiteSettings()
   return (
-    <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
+    <RootLayout
+      htmlProps={{ style: siteVariables(settings), className: 'family-admin' }}
+      config={config}
+      importMap={importMap}
+      serverFunction={serverFunction}
+    >
       {children}
     </RootLayout>
   )

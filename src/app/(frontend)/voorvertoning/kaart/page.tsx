@@ -1,9 +1,11 @@
+import { requireSiteModule } from '@/lib/site-modules'
+import { sitePageMetadata } from '@/lib/get-site-settings'
 import { FamilyMap } from '@/components/FamilyMap'
 import { demoMapFamily } from '@/lib/demo-map'
 import { mapboxToken } from '@/lib/mapbox-token'
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Voorbeeldkaart · Familie Zuurbier' }
-export default function Page() {
+export default async function Page() {
+  await requireSiteModule('map', '/voorvertoning')
   return (
     <FamilyMap
       family={demoMapFamily}
@@ -14,3 +16,5 @@ export default function Page() {
     />
   )
 }
+
+export const generateMetadata = () => sitePageMetadata('map')

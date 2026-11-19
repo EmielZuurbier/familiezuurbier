@@ -9,7 +9,8 @@ import { familyEmail } from './lib/family-auth/mail'
 import sharp from 'sharp'
 import { Events } from './collections/events'
 import { Media } from './collections/media'
-import { familyBrand } from './lib/branding'
+import { SiteSettings } from './globals/site-settings'
+import { BrandAssets } from './collections/brand-assets'
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || 'demo-build-only-no-real-data-no-api',
@@ -17,8 +18,16 @@ export default buildConfig({
     user: 'administrators',
     theme: 'light',
     importMap: { baseDir: dirname },
-    meta: { titleSuffix: ` | ${familyBrand.name}` },
-    components: { beforeDashboard: ['./components/AdminWelcome#AdminWelcome'] },
+    meta: { titleSuffix: ' | Beheer' },
+    components: {
+      beforeDashboard: ['./components/AdminWelcome#AdminWelcome'],
+      beforeLogin: ['./components/admin/AdminBrand#AdminLoginWelcome'],
+      beforeNavLinks: ['./components/admin/AdminBrand#AdminNavBrand'],
+      graphics: {
+        Logo: './components/admin/AdminBrand#AdminLogo',
+        Icon: './components/admin/AdminBrand#AdminIcon',
+      },
+    },
   },
   i18n: { fallbackLanguage: 'nl', supportedLanguages: { nl } },
   collections: [
@@ -26,12 +35,14 @@ export default buildConfig({
     People,
     Events,
     Media,
+    BrandAssets,
     Partnerships,
     Parentages,
     FamilyMembers,
     FamilySessions,
     FamilyRateLimits,
   ],
+  globals: [SiteSettings],
   db: postgresAdapter({
     pool: {
       connectionString:

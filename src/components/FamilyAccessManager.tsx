@@ -1,6 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSiteSettings } from './SiteSettingsProvider'
+import { siteText } from '@/lib/site-settings'
+import { FamilyBrand } from './FamilyBrand'
 import Link from 'next/link'
 import { ArrowLeft, Mail, ShieldCheck, UserPlus } from 'lucide-react'
 type Member = {
@@ -19,6 +22,7 @@ export function FamilyAccessManager({
   members: Member[]
   mailReady: boolean
 }) {
+  const settings = useSiteSettings()
   const router = useRouter()
   const [name, setName] = useState(''),
     [email, setEmail] = useState(''),
@@ -58,12 +62,10 @@ export function FamilyAccessManager({
           <ArrowLeft size={15} />
           Terug naar het beheer
         </Link>
-        <span className="eyebrow">PRIVÉ, VOOR DE FAMILIE</span>
-        <h1>Familietoegang</h1>
-        <p>
-          Nodig familieleden persoonlijk uit. Zij kunnen de stamboom en kaart bekijken; alleen
-          beheerders mogen gegevens wijzigen.
-        </p>
+        <FamilyBrand />
+        <span className="eyebrow">{siteText(settings.admin.accessEyebrow, settings)}</span>
+        <h1>{siteText(settings.admin.accessTitle, settings)}</h1>
+        <p>{siteText(settings.admin.accessDescription, settings)}</p>
       </header>
       {!mailReady && (
         <div className="auth-notice" role="status">

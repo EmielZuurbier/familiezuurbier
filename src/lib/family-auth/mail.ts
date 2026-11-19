@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
 import { APIError, type EmailAdapter } from 'payload'
 import { normalizeEmail } from './primitives'
-import { familyBrand } from '../branding'
+import { defaultSiteSettings, resolveSiteSettings } from '../site-settings'
 
 export function mailConfigured() {
   return !!(
@@ -11,7 +11,7 @@ export function mailConfigured() {
     normalizeEmail(process.env.MAIL_FROM)
   )
 }
-export const familyEmail: EmailAdapter = () => {
+export const familyEmail: EmailAdapter = ({ payload }) => {
   const from = normalizeEmail(process.env.MAIL_FROM) || 'beheer@familieboom.invalid'
   const secure = process.env.SMTP_PORT === '465'
   const transport = mailConfigured()
@@ -31,14 +31,17 @@ export const familyEmail: EmailAdapter = () => {
   return {
     name: 'family-smtp',
     defaultFromAddress: from,
-    defaultFromName: familyBrand.name,
+    defaultFromName: defaultSiteSettings.identity.name,
     sendEmail: async (message) => {
       if (!transport)
         throw new APIError('E-mail is nog niet ingesteld. Sluit eerst een e-maildienst aan.', 503)
       try {
+        const settings = resolveSiteSettings(
+          await payload.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: false }),
+        )
         return await transport.sendMail({
-          from: { name: familyBrand.name, address: from },
           ...message,
+          from: { name: settings.identity.name, address: from },
         })
       } catch {
         throw new APIError(

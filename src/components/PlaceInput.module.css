@@ -90,7 +90,7 @@
   background: var(--theme-elevation-100, #edf2eb);
 }
 .suggestions button:focus-visible {
-  outline: 2px solid #345d49;
+  outline: 2px solid var(--green, #345d49);
 }
 .suggestions a,
 .hint {

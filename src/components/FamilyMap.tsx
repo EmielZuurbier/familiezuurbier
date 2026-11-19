@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { MapPin, Search, Settings2, Users, X, RotateCw } from 'lucide-react'
 import { FamilyBrand } from './FamilyBrand'
-import { familyBrand } from '@/lib/branding'
+import { useSiteSettings } from './SiteSettingsProvider'
+import { SidebarHeading } from './SidebarHeading'
 import type { Family, Person } from '@/lib/types'
 import {
   geocodingURL,
@@ -43,12 +44,17 @@ export function FamilyMap({
   mapHref: string
   viewer?: FamilyViewer
 }) {
+  const settings = useSiteSettings()
   const layerGroups = useMemo(
     () => mapLayers.map((layer) => ({ ...layer, ...groupResidences(family.people, layer.id) })),
     [family.people],
   )
   const allGroups = useMemo(() => layerGroups.flatMap((layer) => layer.groups), [layerGroups])
-  const [layers, setLayers] = useState<MapLayer[]>(['residence', 'birth'])
+  const [layers, setLayers] = useState<MapLayer[]>(() =>
+    [settings.options.mapResidence && 'residence', settings.options.mapBirth && 'birth'].filter(
+      (layer): layer is MapLayer => !!layer,
+    ),
+  )
   const activeLayers = layerGroups.filter((layer) => layers.includes(layer.id))
   const groups = useMemo(
     () => allGroups.filter((group) => layers.includes(group.layer)),
@@ -190,15 +196,7 @@ export function FamilyMap({
     <main className="app-shell map-shell">
       <aside className="sidebar map-sidebar">
         <FamilyBrand href={treeHref} />
-        <div className="sidebar-heading map-sidebar-heading">
-          <span className="eyebrow">VERBONDEN, WAAR WE OOK ZIJN</span>
-          <h1>
-            {demo ? 'Onze familie,' : 'Familie'}
-            <br />
-            <em>{demo ? 'op de kaart.' : `${familyBrand.surname}.`}</em>
-          </h1>
-          <p>Ontdek waar de familie woont en waar onze verhalen begonnen.</p>
-        </div>
+        <SidebarHeading module="map" demo={demo} />
         <div className="search-area">
           <label htmlFor="map-person-search">Zoek een persoon of plaats</label>
           <div className="search-field">
@@ -264,7 +262,11 @@ export function FamilyMap({
                   >
                     <MapPin
                       size={14}
-                      color={mapLayers.find((layer) => layer.id === group.layer)!.color}
+                      color={
+                        group.layer === 'residence'
+                          ? 'var(--green)'
+                          : mapLayers.find((layer) => layer.id === group.layer)!.color
+                      }
                     />
                     <strong>{group.label}</strong>
                     <span>{group.people.length}</span>
@@ -395,7 +397,7 @@ export function FamilyMap({
               />
               <span
                 className="map-layer-swatch"
-                style={{ backgroundColor: layer.color }}
+                style={{ backgroundColor: layer.id === 'residence' ? 'var(--green)' : layer.color }}
                 aria-hidden="true"
               />
               {layer.label}

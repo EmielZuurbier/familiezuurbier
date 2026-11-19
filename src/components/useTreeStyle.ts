@@ -1,16 +1,18 @@
 'use client'
 import { useSyncExternalStore } from 'react'
+import { useSiteSettings } from './SiteSettingsProvider'
 
 export type TreeStyle = 'structured' | 'organic'
 const key = 'familieboom:tree-style:v1'
 const changeEvent = 'familieboom:tree-style-change'
 let fallback: TreeStyle | undefined
-function snapshot(): TreeStyle {
+function snapshot(): TreeStyle | undefined {
   if (fallback) return fallback
   try {
-    return localStorage.getItem(key) === 'organic' ? 'organic' : 'structured'
+    const saved = localStorage.getItem(key)
+    return saved === 'organic' || saved === 'structured' ? saved : undefined
   } catch {
-    return 'structured'
+    return undefined
   }
 }
 function subscribe(listener: () => void) {
@@ -28,7 +30,9 @@ function subscribe(listener: () => void) {
   }
 }
 export function useTreeStyle() {
-  const style = useSyncExternalStore(subscribe, snapshot, () => 'structured' as TreeStyle)
+  const settings = useSiteSettings()
+  const saved = useSyncExternalStore(subscribe, snapshot, () => undefined)
+  const style = saved ?? (settings.options.defaultTreeStyle as TreeStyle)
   const setStyle = (next: TreeStyle) => {
     fallback = next
     try {

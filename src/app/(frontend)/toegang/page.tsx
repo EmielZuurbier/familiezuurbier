@@ -5,9 +5,9 @@ import config from '@payload-config'
 import { FamilyAccessManager } from '@/components/FamilyAccessManager'
 import { listMembers } from '@/lib/family-auth/service'
 import { mailConfigured } from '@/lib/family-auth/mail'
-import { familyPageTitle } from '@/lib/branding'
+import { sitePageMetadata } from '@/lib/get-site-settings'
 export const dynamic = 'force-dynamic'
-export const metadata = { title: familyPageTitle('Familietoegang beheren') }
+export const generateMetadata = () => sitePageMetadata('access')
 export default async function Page() {
   const payload = await getPayload({ config }),
     { user } = await payload.auth({ headers: await headers() })

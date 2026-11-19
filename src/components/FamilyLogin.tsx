@@ -3,7 +3,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react'
 import { FamilyBrand } from './FamilyBrand'
-import { familyBrand } from '@/lib/branding'
+import { useSiteSettings } from './SiteSettingsProvider'
+import { siteText } from '@/lib/site-settings'
 
 const subscribeInvitation = (callback: () => void) => {
   window.addEventListener('hashchange', callback)
@@ -12,6 +13,8 @@ const subscribeInvitation = (callback: () => void) => {
 const invitationSnapshot = () =>
   new URLSearchParams(window.location.hash.slice(1)).get('uitnodiging') || ''
 export function FamilyLogin({ mailReady }: { mailReady: boolean }) {
+  const settings = useSiteSettings()
+  const t = (value: string) => siteText(value, settings, { email })
   const [email, setEmail] = useState(''),
     [code, setCode] = useState('')
   const token = useSyncExternalStore(subscribeInvitation, invitationSnapshot, () => '')
@@ -61,20 +64,20 @@ export function FamilyLogin({ mailReady }: { mailReady: boolean }) {
     <main className="family-auth-page">
       <div className="family-auth-card">
         <FamilyBrand fullNavigation />
-        <span className="eyebrow">EEN PLEK VOOR DE FAMILIE</span>
+        <span className="eyebrow">{t(settings.login.eyebrow)}</span>
         <h1>
           {step === 'invite'
-            ? 'Je bent uitgenodigd.'
+            ? t(settings.login.inviteTitle)
             : step === 'code'
-              ? 'Bekijk je e-mail.'
-              : `Welkom bij de familie ${familyBrand.surname}.`}
+              ? t(settings.login.codeTitle)
+              : t(settings.login.title)}
         </h1>
         <p>
           {step === 'invite'
-            ? 'Accepteer je persoonlijke uitnodiging om de stamboom en familiekaart te bekijken. Je krijgt alleen kijkrechten.'
+            ? t(settings.login.inviteDescription)
             : step === 'code'
-              ? `Als ${email} toegang heeft, ontvang je daar een zescijferige code. De code is tien minuten geldig.`
-              : 'Log in met het e-mailadres waarop je bent uitgenodigd. Je ontvangt een eenmalige code; een wachtwoord is niet nodig.'}
+              ? t(settings.login.codeDescription)
+              : t(settings.login.description)}
         </p>
         {!mailReady && (
           <div className="auth-notice" role="status">
@@ -155,7 +158,7 @@ export function FamilyLogin({ mailReady }: { mailReady: boolean }) {
                 ? 'Uitnodiging accepteren'
                 : step === 'code'
                   ? 'Inloggen'
-                  : 'Stuur mij een inlogcode'}
+                  : t(settings.login.button)}
           </button>
         </form>
         {step === 'code' && (
@@ -188,7 +191,7 @@ export function FamilyLogin({ mailReady }: { mailReady: boolean }) {
         )}
         <p className="auth-privacy">
           <ShieldCheck size={15} />
-          Alleen uitgenodigde familieleden hebben toegang.
+          {t(settings.login.privacy)}
         </p>
         <Link className="auth-admin" href="/admin">
           Inloggen als beheerder →

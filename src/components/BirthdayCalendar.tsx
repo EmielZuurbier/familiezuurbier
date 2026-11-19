@@ -20,7 +20,8 @@ import { LifeStatusIcon } from './LifeStatusIcon'
 import { PersonAvatar } from './PersonAvatar'
 import { PersonDetail } from './FamilyTree'
 import { FamilyBrand } from './FamilyBrand'
-import { familyBrand } from '@/lib/branding'
+import { useSiteSettings } from './SiteSettingsProvider'
+import { SidebarHeading } from './SidebarHeading'
 
 export function BirthdayCalendar({
   family,
@@ -37,6 +38,7 @@ export function BirthdayCalendar({
   mapHref: string
   viewer?: FamilyViewer
 }) {
+  const settings = useSiteSettings()
   const [year, setYear] = useState(today.year),
     [month, setMonth] = useState<number | null>(null)
   const [query, setQuery] = useState(''),
@@ -72,7 +74,7 @@ export function BirthdayCalendar({
         namespace,
         calendarName: demo
           ? 'Voorbeeldverjaardagen (fictief)'
-          : `Verjaardagen · ${familyBrand.name}`,
+          : `Verjaardagen · ${settings.identity.name}`,
       })
       if (!result.count) return
       url = URL.createObjectURL(new Blob([result.content], { type: 'text/calendar;charset=utf-8' }))
@@ -117,15 +119,7 @@ export function BirthdayCalendar({
     <main className="app-shell birthday-shell">
       <aside className="sidebar birthday-sidebar">
         <FamilyBrand href={treeHref} />
-        <div className="sidebar-heading">
-          <span className="eyebrow">ELKE VERJAARDAG EEN VERHAAL</span>
-          <h1>
-            {demo ? 'Een jaar vol' : 'Familie'}
-            <br />
-            <em>{demo ? 'familie.' : `${familyBrand.surname}.`}</em>
-          </h1>
-          <p>Alle geboortedagen bij elkaar. Kijk wie er jarig is en hoe oud iemand wordt.</p>
-        </div>
+        <SidebarHeading module="calendar" demo={demo} />
         <div className="search-area">
           <label htmlFor="birthday-search">Wie zoek je?</label>
           <div className="search-field">
@@ -245,16 +239,18 @@ export function BirthdayCalendar({
               Dit jaar
             </button>
           )}
-          <div className="birthday-export">
-            <button
-              onClick={downloadBirthdays}
-              disabled={!exportCount}
-              aria-describedby="birthday-export-note"
-            >
-              <Download size={15} /> Download .ics <span>({exportCount})</span>
-            </button>
-            <span id="birthday-export-note">Huidige selectie · jaarlijks herhaald</span>
-          </div>
+          {settings.options.calendarExport && (
+            <div className="birthday-export">
+              <button
+                onClick={downloadBirthdays}
+                disabled={!exportCount}
+                aria-describedby="birthday-export-note"
+              >
+                <Download size={15} /> Download .ics <span>({exportCount})</span>
+              </button>
+              <span id="birthday-export-note">Huidige selectie · jaarlijks herhaald</span>
+            </div>
+          )}
         </div>
         <div className={`tree-stage birthday-stage ${person ? 'has-detail' : ''}`}>
           <div className="birthday-scroll">

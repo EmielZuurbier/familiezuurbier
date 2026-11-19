@@ -2,7 +2,7 @@
 
 Een besloten stamboomwebsite voor de **familie Zuurbier**. De app tekent personen, partnerschappen en ouderschap als een interactief schema. Voorbeeldgegevens zijn uitsluitend beschikbaar zolang er geen personen in de database staan, of wanneer er nog geen database is ingesteld.
 
-De familienaam komt terug bij het logo, in de opgeslagen weergaven, op het inlogscherm, in het beheer, in de paginatitels en in de e-mailteksten. De vormgeving gebruikt `src/lib/branding.ts` en `FamilyBrand.tsx`. Het [hostingadvies en de featurevoorstellen van 17 november 2026](docs/hostingadvies-2026-11-17.md) beschrijven een volgende stap; de applicatie is nog niet online gepubliceerd en er is nog geen hosting ingericht.
+De familienaam komt terug bij het logo, in de opgeslagen weergaven, op het inlogscherm, in het beheer, in de paginatitels en in de e-mailteksten. Naam, teksten, modules, logo’s en huisstijl zijn centraal instelbaar in **CMS → Website → Website-instellingen**. De standaardwaarden staan in `src/lib/site-settings.ts`; de huidige Zuurbier-inrichting is vooringevuld. Het [hostingadvies en de featurevoorstellen van 17 november 2026](docs/hostingadvies-2026-11-17.md) beschrijven een volgende stap; de applicatie is nog niet online gepubliceerd en er is nog geen hosting ingericht.
 
 ## Repository
 
@@ -335,3 +335,25 @@ Het veld **Verhaal** gebruikt de zelfstandige Gutenberg-editor, geladen bij het 
 De opslag is JSON met een expliciete formaatversie en verwijzingen naar Payload-media. De server controleert ondersteunde blokken, afmetingen van de blokstructuur en bestaande afbeeldingen. Alleen toegestane inline HTML wordt bewaard; scripts, willekeurige HTML, externe afbeeldings-URL’s en editoridentificaties worden verwijderd of geweigerd. Foto’s worden via de afgeschermde bestandsroute getoond, zonder openbare afbeeldingproxy. Het verwijderen van gekoppelde personen of afbeeldingen wordt geweigerd totdat hun koppelingen bewust zijn weggehaald. Ook wijzigingen in deze koppelingen gebruiken de bestaande transactievergrendeling.
 
 De migratie `20261118_123225_gebeurtenissen` voegt uitsluitend de gebeurtenissentabellen, relaties en bijbehorende indexen toe. Voer bij een productie-update zoals gebruikelijk `npm run payload -- migrate` uit vóór het starten van de nieuwe applicatie. De migratie en het terugdraaien daarvan zijn in een geïsoleerde testdatabase gecontroleerd. De JSON-familie-export bevat nu ook gebeurtenissen (schemaVersion 3); een volledige databaseback-up bevat eveneens alle verhalen. Uploadbestanden blijven onderdeel van de afzonderlijke mediaback-up.
+
+
+## Website-instellingen en CMS-huisstijl
+
+**Website → Website-instellingen** bevat zes onderdelen:
+
+- **Naam & logo:** websitenaam, familienaam, woordmerk, websitebeschrijving, logo en browsericoon.
+- **Huisstijl:** kleuren met een kleurkiezer en codeveld, en lettertypen voor titels en tekst. Lora, DM Sans en het systeemlettertype zijn beschikbaar; de meegeleverde lettertypen worden lokaal geladen.
+- **Pagina’s & modules:** Stamboom, Kaart, Verjaardagen en Gebeurtenissen aan- of uitzetten, menunamen, korte menunamen, browsertitels, overzichtstitels, boventitels, introducties en afzonderlijke voorbeeldtitels. Gedeelde titels, de stamboomnotitie en de bewaartekst zijn hier ook aanpasbaar.
+- **Inloggen:** teksten voor inloggen, uitnodigen, codes en de afgeschermde toegangspagina; daarnaast de onderwerpen en introductie van uitnodigingsmails. De afzendernaam volgt de websitenaam. Codes, hun geldigheidsduur en de uitnodigingslink blijven automatisch beheerd.
+- **Instellingen:** beginindeling van de stamboom, muisbediening en snelheid, minimap, stamboomcijfers, kalenderexport, aanvankelijke kaartlagen en Google Tag Manager. Een persoonlijke keuze voor de stamboomindeling blijft behouden.
+- **Beheer:** welkomstteksten op het dashboard en CMS-inlogscherm en titels/introductie van familietoegang.
+
+Gebruik `{familienaam}` en `{websitenaam}` voor namen die automatisch moeten meeveranderen. Het code-inlogscherm ondersteunt ook `{email}`. Teksten worden als tekst weergegeven. Na opslaan zijn wijzigingen beschikbaar bij het volgende openen of verversen van een pagina; er is geen nieuwe build nodig. Een uitgeschakelde module verdwijnt uit het menu en de directe route is niet beschikbaar. Als de stamboom uit staat, gaat de startpagina naar de eerste actieve module. Ten minste één module moet aan blijven. Deze schakelaars beheren de websiteweergaven; bestaande CMS-inhoud blijft behouden en bewerkbaar.
+
+**Huisstijlbestanden** is een aparte, openbare uploadcollectie voor logo’s en browsericonen. Zij accepteert PNG, JPG en WebP, verwijdert bronmetadata en begrenst de beeldafmetingen. Zet hier geen privéfoto’s in. Alleen beheerders kunnen bestanden of instellingen wijzigen; gekoppelde logo’s kunnen pas worden verwijderd nadat de koppeling bij de website-instellingen is weggehaald. Persoons- en gebeurtenisfoto’s blijven in de bestaande afgeschermde collectie **Afbeeldingen**. Huisstijlbestanden staan in `uploads/brand-assets/` (eventueel te wijzigen met `BRAND_ASSETS_DIR`). Neem bij een volledige back-up zowel de database als **beide** uploadmappen mee. De JSON-familie-export bevat familiegegevens; website-instellingen zitten in de volledige databaseback-up.
+
+Het CMS gebruikt dezelfde instelbare kernkleuren en lettertypen als de website, met een eigen inlogscherm, logo, navigatie en dashboard. Database-instellingen, geheime sleutels, SMTP-inloggegevens en Mapbox-toegang blijven serverinstellingen. Deze worden niet via de openbare websiteconfiguratie gedeeld. De bestaande toegangscontrole voor familiegegevens blijft gelden, ongeacht welke modules of teksten zijn gekozen.
+
+De migratie `20261118_205605_website_instellingen` voegt de instellingen en openbare huisstijlcollectie toe en vult de huidige waarden in. Zij wijzigt geen personen, familiebanden of verhalen. Voer bij een productie-update de migraties uit vóór het starten van de nieuwe applicatie. Zowel migreren als terugdraaien, opslag, deelwijzigingen, toegangsrechten, gekoppelde bestanden en invoervalidatie zijn in een aparte testdatabase gecontroleerd.
+
+De gebeurteniskaartjes hebben geen knop-padding. Hun thumbnails hebben een vaste verhouding van 4:3 op brede schermen en 16:9 op mobiel, met `object-fit: cover`. De omslagfoto boven een geopend verhaal gebruikt 16:9. Foto’s in het verhaal zelf behouden hun oorspronkelijke verhouding.

@@ -2,9 +2,9 @@
   border: 1px solid var(--theme-elevation-200);
   border-radius: 8px;
   background: white;
-  color: #233e33;
+  color: var(--ink, #233e33);
   min-height: 320px;
-  --wp-admin-theme-color: #345d49;
+  --wp-admin-theme-color: var(--green, #345d49);
   --wp-admin-theme-color-darker-10: #2a4c3b;
   --wp-admin-theme-color-darker-20: #203f30;
 }
@@ -48,7 +48,7 @@
   margin-bottom: 12px;
 }
 .gutenberg-editor .family-editor-image figcaption {
-  color: #6f7c70;
+  color: var(--muted, #6f7c70);
   font-size: 14px;
   padding: 8px 0;
 }
@@ -79,7 +79,7 @@
   cursor: pointer;
 }
 .family-media-grid button[aria-pressed='true'] {
-  border-color: #345d49;
+  border-color: var(--green, #345d49);
 }
 .family-media-grid img {
   display: block;

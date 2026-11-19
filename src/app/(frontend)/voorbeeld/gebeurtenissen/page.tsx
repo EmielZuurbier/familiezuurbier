@@ -1,12 +1,14 @@
+import { requireSiteModule } from '@/lib/site-modules'
+import { sitePageMetadata } from '@/lib/get-site-settings'
 import { EventsOverview } from '@/components/events/EventsOverview'
 import { demoFamily } from '@/lib/demo'
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Voorbeeld gebeurtenissen · Familie Zuurbier' }
 export default async function Page({
   searchParams,
 }: {
   searchParams: Promise<{ event?: string }>
 }) {
+  await requireSiteModule('events', '/voorbeeld')
   return (
     <EventsOverview
       family={demoFamily}
@@ -16,3 +18,5 @@ export default async function Page({
     />
   )
 }
+
+export const generateMetadata = () => sitePageMetadata('events')

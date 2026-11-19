@@ -72,6 +72,7 @@ export interface Config {
     people: Person;
     events: Event;
     media: Media;
+    'brand-assets': BrandAsset;
     partnerships: Partnership;
     parentages: Parentage;
     'family-members': FamilyMember;
@@ -88,6 +89,7 @@ export interface Config {
     people: PeopleSelect<false> | PeopleSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'brand-assets': BrandAssetsSelect<false> | BrandAssetsSelect<true>;
     partnerships: PartnershipsSelect<false> | PartnershipsSelect<true>;
     parentages: ParentagesSelect<false> | ParentagesSelect<true>;
     'family-members': FamilyMembersSelect<false> | FamilyMembersSelect<true>;
@@ -102,8 +104,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -308,6 +314,27 @@ export interface Event {
   createdAt: string;
 }
 /**
+ * Openbare logo’s en browsericonen. Upload privé familiefoto’s bij Afbeeldingen.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brand-assets".
+ */
+export interface BrandAsset {
+  id: number;
+  alt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
  * Kies twee partners en voeg hun gezamenlijke kinderen hier één keer toe. Elk partnerschap heeft een eigen kinderenlijst.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -432,6 +459,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'brand-assets';
+        value: number | BrandAsset;
       } | null)
     | ({
         relationTo: 'partnerships';
@@ -616,6 +647,24 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brand-assets_select".
+ */
+export interface BrandAssetsSelect<T extends boolean = true> {
+  alt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "partnerships_select".
  */
 export interface PartnershipsSelect<T extends boolean = true> {
@@ -723,6 +772,342 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Naam, huisstijl, teksten en modules voor de hele website. Gebruik {familienaam} en {websitenaam} om namen automatisch te laten meelopen. Ververs open pagina’s na het opslaan. Deze instellingen en huisstijlbestanden zijn openbaar; zet hier geen privégegevens in.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  identity: {
+    name: string;
+    surname: string;
+    wordmark?: string | null;
+    showDot?: boolean | null;
+    description?: string | null;
+    /**
+     * Optioneel. Vervangt het stamboomicoon. Zonder bestand blijft het huidige icoon zichtbaar.
+     */
+    logo?: (number | null) | BrandAsset;
+    logoAlt?: string | null;
+    /**
+     * Bij voorkeur een vierkante PNG. Zonder bestand blijft het huidige browsericoon behouden.
+     */
+    icon?: (number | null) | BrandAsset;
+  };
+  appearance: {
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    ink: string;
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    green: string;
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    paper: string;
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    surface: string;
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    accent: string;
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    muted: string;
+    /**
+     * Kleurcode, inclusief #. Controleer bij een nieuwe kleur of de tekst goed leesbaar blijft.
+     */
+    line: string;
+    headingFont: 'lora' | 'dm-sans' | 'system';
+    bodyFont: 'lora' | 'dm-sans' | 'system';
+  };
+  pages?: {
+    tree?: {
+      enabled?: boolean | null;
+      label?: string | null;
+      shortLabel?: string | null;
+      workspaceTitle?: string | null;
+      pageTitle?: string | null;
+      eyebrow?: string | null;
+      title?: string | null;
+      titleAccent?: string | null;
+      description?: string | null;
+      exampleTitle?: string | null;
+      exampleTitleAccent?: string | null;
+    };
+    map?: {
+      enabled?: boolean | null;
+      label?: string | null;
+      shortLabel?: string | null;
+      workspaceTitle?: string | null;
+      pageTitle?: string | null;
+      eyebrow?: string | null;
+      title?: string | null;
+      titleAccent?: string | null;
+      description?: string | null;
+      exampleTitle?: string | null;
+      exampleTitleAccent?: string | null;
+    };
+    calendar?: {
+      enabled?: boolean | null;
+      label?: string | null;
+      shortLabel?: string | null;
+      workspaceTitle?: string | null;
+      pageTitle?: string | null;
+      eyebrow?: string | null;
+      title?: string | null;
+      titleAccent?: string | null;
+      description?: string | null;
+      exampleTitle?: string | null;
+      exampleTitleAccent?: string | null;
+    };
+    events?: {
+      enabled?: boolean | null;
+      label?: string | null;
+      shortLabel?: string | null;
+      workspaceTitle?: string | null;
+      pageTitle?: string | null;
+      eyebrow?: string | null;
+      title?: string | null;
+      titleAccent?: string | null;
+      description?: string | null;
+      exampleTitle?: string | null;
+      exampleTitleAccent?: string | null;
+    };
+  };
+  shared?: {
+    workspaceEyebrow?: string | null;
+    statisticsTitle?: string | null;
+    personTitle?: string | null;
+    eventEyebrow?: string | null;
+    sidebarNote?: string | null;
+    privacyNote?: string | null;
+    manageLabel?: string | null;
+  };
+  login?: {
+    pageTitle?: string | null;
+    eyebrow?: string | null;
+    title?: string | null;
+    description?: string | null;
+    inviteTitle?: string | null;
+    inviteDescription?: string | null;
+    codeTitle?: string | null;
+    codeDescription?: string | null;
+    privacy?: string | null;
+    privateTitle?: string | null;
+    privateDescription?: string | null;
+    button?: string | null;
+  };
+  /**
+   * De afzendernaam volgt de websitenaam. De technische mailinstellingen blijven bij de serverinstellingen. De inlogcode, geldigheidsduur en uitnodigingslink worden automatisch toegevoegd.
+   */
+  mail?: {
+    invitationSubject?: string | null;
+    invitationIntroduction?: string | null;
+    codeSubject?: string | null;
+  };
+  /**
+   * Begininstellingen gelden voor nieuwe bezoeken. Een persoonlijk gekozen stamboomindeling blijft behouden.
+   */
+  options: {
+    defaultTreeStyle: 'structured' | 'organic';
+    mouseExploration?: boolean | null;
+    mouseSpeed: 'slow' | 'normal' | 'fast';
+    minimap?: boolean | null;
+    statistics?: boolean | null;
+    calendarExport?: boolean | null;
+    mapResidence?: boolean | null;
+    mapBirth?: boolean | null;
+  };
+  /**
+   * Wordt alleen geladen na de toegangscontrole van een familiepagina. Verstuur geen namen, geboortedata of andere familiegegevens naar je meetdienst.
+   */
+  tracking?: {
+    enabled?: boolean | null;
+    containerId?: string | null;
+  };
+  admin?: {
+    title?: string | null;
+    introduction?: string | null;
+    loginTitle?: string | null;
+    loginDescription?: string | null;
+    accessPageTitle?: string | null;
+    accessTitle?: string | null;
+    accessEyebrow?: string | null;
+    accessDescription?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  identity?:
+    | T
+    | {
+        name?: T;
+        surname?: T;
+        wordmark?: T;
+        showDot?: T;
+        description?: T;
+        logo?: T;
+        logoAlt?: T;
+        icon?: T;
+      };
+  appearance?:
+    | T
+    | {
+        ink?: T;
+        green?: T;
+        paper?: T;
+        surface?: T;
+        accent?: T;
+        muted?: T;
+        line?: T;
+        headingFont?: T;
+        bodyFont?: T;
+      };
+  pages?:
+    | T
+    | {
+        tree?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              shortLabel?: T;
+              workspaceTitle?: T;
+              pageTitle?: T;
+              eyebrow?: T;
+              title?: T;
+              titleAccent?: T;
+              description?: T;
+              exampleTitle?: T;
+              exampleTitleAccent?: T;
+            };
+        map?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              shortLabel?: T;
+              workspaceTitle?: T;
+              pageTitle?: T;
+              eyebrow?: T;
+              title?: T;
+              titleAccent?: T;
+              description?: T;
+              exampleTitle?: T;
+              exampleTitleAccent?: T;
+            };
+        calendar?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              shortLabel?: T;
+              workspaceTitle?: T;
+              pageTitle?: T;
+              eyebrow?: T;
+              title?: T;
+              titleAccent?: T;
+              description?: T;
+              exampleTitle?: T;
+              exampleTitleAccent?: T;
+            };
+        events?:
+          | T
+          | {
+              enabled?: T;
+              label?: T;
+              shortLabel?: T;
+              workspaceTitle?: T;
+              pageTitle?: T;
+              eyebrow?: T;
+              title?: T;
+              titleAccent?: T;
+              description?: T;
+              exampleTitle?: T;
+              exampleTitleAccent?: T;
+            };
+      };
+  shared?:
+    | T
+    | {
+        workspaceEyebrow?: T;
+        statisticsTitle?: T;
+        personTitle?: T;
+        eventEyebrow?: T;
+        sidebarNote?: T;
+        privacyNote?: T;
+        manageLabel?: T;
+      };
+  login?:
+    | T
+    | {
+        pageTitle?: T;
+        eyebrow?: T;
+        title?: T;
+        description?: T;
+        inviteTitle?: T;
+        inviteDescription?: T;
+        codeTitle?: T;
+        codeDescription?: T;
+        privacy?: T;
+        privateTitle?: T;
+        privateDescription?: T;
+        button?: T;
+      };
+  mail?:
+    | T
+    | {
+        invitationSubject?: T;
+        invitationIntroduction?: T;
+        codeSubject?: T;
+      };
+  options?:
+    | T
+    | {
+        defaultTreeStyle?: T;
+        mouseExploration?: T;
+        mouseSpeed?: T;
+        minimap?: T;
+        statistics?: T;
+        calendarExport?: T;
+        mapResidence?: T;
+        mapBirth?: T;
+      };
+  tracking?:
+    | T
+    | {
+        enabled?: T;
+        containerId?: T;
+      };
+  admin?:
+    | T
+    | {
+        title?: T;
+        introduction?: T;
+        loginTitle?: T;
+        loginDescription?: T;
+        accessPageTitle?: T;
+        accessTitle?: T;
+        accessEyebrow?: T;
+        accessDescription?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

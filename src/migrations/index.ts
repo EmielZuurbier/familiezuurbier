@@ -7,6 +7,7 @@ import * as migration_20261116_180458_partnership_titles from './20261116_180458
 import * as migration_20261116_183436_person_portraits from './20261116_183436_person_portraits'
 import * as migration_20261116_185823_separate_avatar_photo from './20261116_185823_separate_avatar_photo'
 import * as migration_20261118_123225_gebeurtenissen from './20261118_123225_gebeurtenissen'
+import * as migration_20261118_205605_website_instellingen from './20261118_205605_website_instellingen'
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20261118_123225_gebeurtenissen.up,
     down: migration_20261118_123225_gebeurtenissen.down,
     name: '20261118_123225_gebeurtenissen',
+  },
+  {
+    up: migration_20261118_205605_website_instellingen.up,
+    down: migration_20261118_205605_website_instellingen.down,
+    name: '20261118_205605_website_instellingen',
   },
 ]

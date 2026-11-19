@@ -1,3 +1,4 @@
+import { resolveSiteSettings, siteText } from '../site-settings'
 import {
   APIError,
   createLocalReq,
@@ -160,10 +161,13 @@ export async function inviteMember(
   })
   let sent = false
   try {
+    const settings = resolveSiteSettings(
+      await payload.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: false }),
+    )
     await payload.sendEmail({
       to: email,
-      subject: 'Je bent uitgenodigd voor de stamboom van de familie Zuurbier',
-      text: `Je bent uitgenodigd om de besloten stamboom en familiekaart van de familie Zuurbier te bekijken.\n\nAccepteer de uitnodiging binnen zeven dagen:\n${invitationURL}\n\nDaarna log je in met een eenmalige code per e-mail. Je krijgt alleen kijkrechten.\n\nVerwachtte je deze uitnodiging niet? Dan kun je deze e-mail negeren.`,
+      subject: siteText(settings.mail.invitationSubject, settings),
+      text: `${siteText(settings.mail.invitationIntroduction, settings)}\n\nAccepteer de uitnodiging binnen zeven dagen:\n${invitationURL}\n\nDaarna log je in met een eenmalige code per e-mail. Je krijgt alleen kijkrechten.\n\nVerwachtte je deze uitnodiging niet? Dan kun je deze e-mail negeren.`,
     })
     sent = true
   } finally {
@@ -274,9 +278,12 @@ export async function requestCode(payload: Payload, emailValue: unknown, ip: str
     deliver: ticket
       ? async () => {
           try {
+            const settings = resolveSiteSettings(
+              await payload.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: false }),
+            )
             await payload.sendEmail({
               to: ticket.email,
-              subject: 'Je inlogcode voor de familie Zuurbier',
+              subject: siteText(settings.mail.codeSubject, settings),
               text: `Je eenmalige inlogcode is: ${ticket.code}\n\nDeze code is tien minuten geldig en kan één keer worden gebruikt. Deel de code niet.\n\nHeb je geen code aangevraagd? Dan kun je deze e-mail negeren.`,
             })
           } catch {

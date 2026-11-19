@@ -50,7 +50,9 @@ import {
 } from '@/lib/layout'
 import { useTreeStyle } from './useTreeStyle'
 import { FamilyBrand } from './FamilyBrand'
-import { familyBrand } from '@/lib/branding'
+import { useSiteSettings } from './SiteSettingsProvider'
+import { SidebarHeading } from './SidebarHeading'
+import { siteText } from '@/lib/site-settings'
 import { placementBounds, stemViewport, UPWARD_BOTTOM_PADDING } from '@/lib/focus'
 import {
   familyFocusOptions,
@@ -165,6 +167,7 @@ function TreeView({
   layoutVariant?: 'classic' | 'upward'
   viewer?: FamilyViewer
 }) {
+  const settings = useSiteSettings()
   const flow = useReactFlow<TreeNode>()
   const [treeStyle, setTreeStyle] = useTreeStyle()
   const organic = treeStyle === 'organic'
@@ -175,8 +178,10 @@ function TreeView({
   const [focusedFamily, setFocusedFamily] = useState<FamilyFocus | null>(null)
   const [compactCanvas, setCompactCanvas] = useState(false)
   const [minimumZoom, setMinimumZoom] = useState(0.16)
-  const [panEnabled, setPanEnabled] = useState(true),
-    [speed, setSpeed] = useState<number>(PAN_SPEEDS.normal),
+  const [panEnabled, setPanEnabled] = useState(settings.options.mouseExploration),
+    [speed, setSpeed] = useState<number>(
+      PAN_SPEEDS[settings.options.mouseSpeed as keyof typeof PAN_SPEEDS],
+    ),
     [help, setHelp] = useState(false),
     [zoom, setZoom] = useState(1)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -564,15 +569,7 @@ function TreeView({
     >
       <aside className="sidebar">
         <FamilyBrand />
-        <div className="sidebar-heading">
-          <span className="eyebrow">VAN GENERATIE OP GENERATIE</span>
-          <h1>
-            {demo ? 'Onze familie,' : 'Familie'}
-            <br />
-            <em>{demo ? 'verbonden.' : `${familyBrand.surname}.`}</em>
-          </h1>
-          <p>Ontdek de mensen en de verbindingen die ons verhaal vormen.</p>
-        </div>
+        <SidebarHeading module="tree" demo={demo} />
         <div className="search-area">
           <label htmlFor="person-search">Wie zoek je?</label>
           <div className="search-field">
@@ -610,38 +607,39 @@ function TreeView({
             </div>
           )}
         </div>
-        <div className="family-summary">
-          <span className="eyebrow">DE STAMBOOM IN CIJFERS</span>
-          <div className="stats">
-            <div>
-              <strong>{family.people.length}</strong>
-              <span>personen</span>
+        {settings.options.statistics && (
+          <div className="family-summary">
+            <span className="eyebrow">{siteText(settings.shared.statisticsTitle, settings)}</span>
+            <div className="stats">
+              <div>
+                <strong>{family.people.length}</strong>
+                <span>personen</span>
+              </div>
+              <div>
+                <strong>{generations}</strong>
+                <span>generaties</span>
+              </div>
+              <GitBranch size={35} strokeWidth={1} />
             </div>
-            <div>
-              <strong>{generations}</strong>
-              <span>generaties</span>
-            </div>
-            <GitBranch size={35} strokeWidth={1} />
           </div>
-        </div>
+        )}
         <div className="sidebar-bottom">
           <div className="little-note">
             <Leaf size={22} strokeWidth={1.4} />
-            <p>
-              Elke naam is een deel
-              <br />
-              van een groter verhaal.
-            </p>
+            <p>{siteText(settings.shared.sidebarNote, settings)}</p>
           </div>
           {viewer !== 'family' && (
             <Link className="admin-link" href="/admin">
-              <Settings2 size={16} /> Stamboom beheren <ArrowUpRight size={15} />
+              <Settings2 size={16} /> {siteText(settings.shared.manageLabel, settings)}{' '}
+              <ArrowUpRight size={15} />
             </Link>
           )}
           <FamilyAccountControls viewer={viewer} />
           <span className="privacy-note">
             <ShieldCheck size={13} />
-            {demo ? 'Uitsluitend fictieve voorbeelden' : 'Zorgvuldig bewaard, in eigen beheer'}
+            {demo
+              ? 'Uitsluitend fictieve voorbeelden'
+              : siteText(settings.shared.privacyNote, settings)}
           </span>
         </div>
       </aside>
@@ -785,7 +783,7 @@ function TreeView({
               aria-label="Stamboomschema met personen en familieverbindingen"
             >
               <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#d9dfd5" />
-              {!!placements.length && (
+              {!!placements.length && settings.options.minimap && (
                 <MiniMap<TreeNode>
                   className="tree-minimap"
                   position="bottom-right"
@@ -795,13 +793,15 @@ function TreeView({
                   zoomable
                   nodeColor={(node) =>
                     focusedIds.has(node.id)
-                      ? '#345d49'
+                      ? settings.appearance.green
                       : node.id === selected
-                        ? '#b49c71'
+                        ? settings.appearance.accent
                         : '#bdcbb5'
                   }
                   nodeStrokeColor={(node) =>
-                    focusedIds.has(node.id) || node.id === selected ? '#233e33' : '#91a186'
+                    focusedIds.has(node.id) || node.id === selected
+                      ? settings.appearance.ink
+                      : '#91a186'
                   }
                   nodeBorderRadius={5}
                   maskColor="rgba(235, 240, 229, 0.65)"
@@ -1015,6 +1015,7 @@ export function PersonDetail({
   eventsBase?: string
   onFocusFamily?: (group: FamilyFocus) => void
 }) {
+  const settings = useSiteSettings()
   const headingRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true })
@@ -1035,7 +1036,9 @@ export function PersonDetail({
     ),
   ]
   siblings.sort(childOrder(family, parents))
-  const personEvents = eventsForPerson(family.events, person.id)
+  const personEvents = settings.pages.events.enabled
+    ? eventsForPerson(family.events, person.id)
+    : []
   const a = age(person)
   const focusOptions = onFocusFamily ? familyFocusOptions(family, person.id) : []
   function relative(id: string, note?: string) {
@@ -1055,7 +1058,7 @@ export function PersonDetail({
   return (
     <aside className="detail-panel" aria-label={`Gegevens van ${person.name}`}>
       <div className="detail-top">
-        <span className="eyebrow">PERSOONSGEGEVENS</span>
+        <span className="eyebrow">{siteText(settings.shared.personTitle, settings)}</span>
         <button
           ref={headingRef}
           onClick={onClose}

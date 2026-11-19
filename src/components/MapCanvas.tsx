@@ -110,7 +110,7 @@ export function MapCanvas({
         button.dataset.layer = group.layer
         const layer = mapLayers.find((layer) => layer.id === group.layer)!
         button.title = `${layer.label}: ${group.label}`
-        button.style.backgroundColor = layer.color
+        button.style.backgroundColor = layer.id === 'residence' ? 'var(--green)' : layer.color
         button.textContent = String(group.people.length)
         button.setAttribute(
           'aria-label',

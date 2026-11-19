@@ -1,16 +1,13 @@
 import Link from 'next/link'
-import { familyBrand } from '@/lib/branding'
-export function AdminWelcome() {
+import { getSiteSettings } from '@/lib/get-site-settings'
+import { siteText } from '@/lib/site-settings'
+export async function AdminWelcome() {
+  const settings = await getSiteSettings()
   return (
-    <section
-      style={{
-        padding: '24px',
-        border: '1px solid var(--theme-elevation-200)',
-        borderRadius: 12,
-        marginBottom: 32,
-      }}
-    >
-      <h2>Welkom bij de familie {familyBrand.surname}</h2>
+    <section className="admin-welcome">
+      <span className="admin-welcome__eyebrow">{settings.identity.name}</span>
+      <h2>{siteText(settings.admin.title, settings)}</h2>
+      <p className="admin-welcome__intro">{siteText(settings.admin.introduction, settings)}</p>
       <p>
         1. Voeg personen toe. 2. Open <strong>Partnerschappen</strong> en kies het paar. 3.
         Selecteer hun gezamenlijke kinderen één keer.
@@ -20,14 +17,17 @@ export function AdminWelcome() {
         bekende datums in. Vink ‘Overleden’ alleen aan wanneer dat bekend is. Wijzigingen
         verschijnen bij het opnieuw openen of vernieuwen van de stamboom.
       </p>
-      <p>
-        Bij <strong>Gebeurtenissen</strong> bewaar je verhalen met foto’s en gekoppelde
-        familieleden. Gebruik + in de verhaleneditor om blokken toe te voegen.
-      </p>
-      <Link href="/">← Bekijk de stamboom</Link>
-      <p>
+      {settings.pages.events.enabled && (
+        <p>
+          Bij <strong>Gebeurtenissen</strong> bewaar je verhalen met foto’s en gekoppelde
+          familieleden. Gebruik + in de verhaleneditor om blokken toe te voegen.
+        </p>
+      )}
+      <div className="admin-welcome__links">
+        <Link href="/">← Bekijk de website</Link>
         <Link href="/toegang">Familieleden uitnodigen en toegang beheren →</Link>
-      </p>
+        <Link href="/admin/globals/site-settings">Website-instellingen →</Link>
+      </div>
     </section>
   )
 }

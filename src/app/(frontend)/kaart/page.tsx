@@ -1,12 +1,13 @@
+import { requireSiteModule } from '@/lib/site-modules'
+import { sitePageMetadata } from '@/lib/get-site-settings'
 import { loadFamily } from '@/lib/load-family'
 import { mapboxToken } from '@/lib/mapbox-token'
 import { FamilyUnavailable } from '@/components/FamilyUnavailable'
 import { FamilyMap } from '@/components/FamilyMap'
-import { familyPageTitle } from '@/lib/branding'
 import { GoogleTagManager } from '@/components/GoogleTagManager'
 export const dynamic = 'force-dynamic'
-export const metadata = { title: familyPageTitle('Familie op de kaart') }
 export default async function Page() {
+  await requireSiteModule('map')
   const result = await loadFamily()
   if (result.kind !== 'ready') return <FamilyUnavailable kind={result.kind} />
   return (
@@ -23,3 +24,5 @@ export default async function Page() {
     </>
   )
 }
+
+export const generateMetadata = () => sitePageMetadata('map')

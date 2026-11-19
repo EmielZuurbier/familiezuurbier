@@ -5,9 +5,9 @@ import config from '@payload-config'
 import { FamilyLogin } from '@/components/FamilyLogin'
 import { databaseConfigured } from '@/lib/settings'
 import { mailConfigured } from '@/lib/family-auth/mail'
-import { familyPageTitle } from '@/lib/branding'
+import { sitePageMetadata } from '@/lib/get-site-settings'
 export const dynamic = 'force-dynamic'
-export const metadata = { title: familyPageTitle('Inloggen') }
+export const generateMetadata = () => sitePageMetadata('login')
 export default async function Page() {
   if (databaseConfigured()) {
     const payload = await getPayload({ config }),
