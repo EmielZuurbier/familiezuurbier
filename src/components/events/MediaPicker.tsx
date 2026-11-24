@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { useConfig } from '@payloadcms/ui'
 import { Button, Modal, Spinner, TextControl } from '@wordpress/components'
 import type { Media } from '@/payload-types'
 import { personPhoto } from '@/lib/person-photo'
@@ -27,6 +28,9 @@ export function MediaPicker({
   onChoose: (images: EditorMedia[]) => void
   onClose: () => void
 }) {
+  const { config } = useConfig()
+  const maxBytes = config.upload?.limits?.fileSize ?? 10 * 1024 * 1024
+  const maxMB = maxBytes / (1024 * 1024)
   const [items, setItems] = useState<EditorMedia[]>([])
   const [selected, setSelected] = useState<number[]>([])
   const [page, setPage] = useState(1)
@@ -107,8 +111,8 @@ export function MediaPicker({
             const uploaded: EditorMedia[] = []
             try {
               for (const file of files) {
-                if (file.size > 10 * 1024 * 1024)
-                  throw new Error('Een foto mag maximaal 10 MB groot zijn.')
+                if (file.size > maxBytes)
+                  throw new Error(`Een foto mag maximaal ${maxMB} MB groot zijn.`)
                 const form = new FormData()
                 form.append('file', file)
                 form.append('_payload', JSON.stringify({ alt: '' }))
@@ -119,7 +123,7 @@ export function MediaPicker({
                 })
                 if (!response.ok)
                   throw new Error(
-                    'Uploaden is niet gelukt. Gebruik JPG, PNG of WebP van maximaal 10 MB.',
+                    `Uploaden is niet gelukt. Gebruik JPG, PNG of WebP van maximaal ${maxMB} MB.`,
                   )
                 const media = editorMedia((await response.json()).doc)
                 if (media) uploaded.push(media)

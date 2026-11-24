@@ -11,6 +11,8 @@ import { Events } from './collections/events'
 import { Media } from './collections/media'
 import { SiteSettings } from './globals/site-settings'
 import { BrandAssets } from './collections/brand-assets'
+import { familyBlobStorage } from './lib/blob-storage'
+import { uploadLimit } from './lib/upload-limits'
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || 'demo-build-only-no-real-data-no-api',
@@ -43,6 +45,7 @@ export default buildConfig({
     FamilyRateLimits,
   ],
   globals: [SiteSettings],
+  plugins: [familyBlobStorage()],
   db: postgresAdapter({
     pool: {
       connectionString:
@@ -52,7 +55,7 @@ export default buildConfig({
   }),
   graphQL: { disable: true },
   sharp,
-  upload: { limits: { fileSize: 10 * 1024 * 1024 }, abortOnLimit: true },
+  upload: { limits: { fileSize: uploadLimit() }, abortOnLimit: true },
   email: familyEmail,
   typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
 })

@@ -27,3 +27,6 @@ uploads/
 *.log
 *.pem
 *.key
+
+# Lokale Vercel-projectkoppeling.
+.vercel/

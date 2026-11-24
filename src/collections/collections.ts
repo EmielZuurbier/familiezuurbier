@@ -1,3 +1,4 @@
+import { uploadLimitMB } from '../lib/upload-limits'
 import type { CollectionConfig, Field, PayloadRequest } from 'payload'
 import type { PostgresAdapter } from '@payloadcms/db-postgres'
 import { sql } from '@payloadcms/db-postgres/drizzle'
@@ -214,8 +215,7 @@ export const People: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
       admin: {
-        description:
-          'Optioneel. Upload een JPG, PNG of WebP van maximaal 10 MB. De foto wordt alleen aan ingelogde familieleden en beheerders getoond.',
+        description: `Optioneel. Upload een JPG, PNG of WebP van maximaal ${uploadLimitMB()} MB. De foto wordt alleen aan ingelogde familieleden en beheerders getoond.`,
       },
     },
     {

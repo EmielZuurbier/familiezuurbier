@@ -357,3 +357,45 @@ Het CMS gebruikt dezelfde instelbare kernkleuren en lettertypen als de website, 
 De migratie `20261118_205605_website_instellingen` voegt de instellingen en openbare huisstijlcollectie toe en vult de huidige waarden in. Zij wijzigt geen personen, familiebanden of verhalen. Voer bij een productie-update de migraties uit vóór het starten van de nieuwe applicatie. Zowel migreren als terugdraaien, opslag, deelwijzigingen, toegangsrechten, gekoppelde bestanden en invoervalidatie zijn in een aparte testdatabase gecontroleerd.
 
 De gebeurteniskaartjes hebben geen knop-padding. Hun thumbnails hebben een vaste verhouding van 4:3 op brede schermen en 16:9 op mobiel, met `object-fit: cover`. De omslagfoto boven een geopend verhaal gebruikt 16:9. Foto’s in het verhaal zelf behouden hun oorspronkelijke verhouding.
+
+
+## Deployen op Vercel
+
+De repository bevat `vercel.json` met een eigen buildopdracht. Gebruik in Vercel **Framework: Next.js**, **Node.js: 24.x** en laat een eventueel handmatig ingestelde Build Command leeg zodat de opdracht uit de repository geldt. De toegestane Node-versie is begrensd op hoofdversie 24. De productiebuild controleert de vereiste variabelen en voert eerst Payload-migraties uit; daarna volgt de Next.js-build. Een mislukte migratie stopt de deployment. Voor een bestaande database die buiten de migraties om is ingericht, moeten migratiehistorie en schema eerst worden gecontroleerd; voer daar niet zomaar de initiële migratie op uit.
+
+Variabelen voor **Production**:
+
+| Variabele | Inhoud |
+| --- | --- |
+| `DATABASE_URL` | De door Neon toegevoegde gepoolde PostgreSQL-verbinding. |
+| `DATABASE_URL_UNPOOLED` | Indien beschikbaar: de directe verbinding voor migraties. |
+| `PAYLOAD_SECRET` | Een vaste, willekeurige geheime sleutel van minimaal 32 tekens. |
+| `BLOB_READ_WRITE_TOKEN` | Token van de gekoppelde **Private** Blob-opslag. |
+| `FAMILY_APP_URL` | Het exacte openbare HTTPS-websiteadres voor uitnodigingen en formulierverzoeken. |
+| `NEXT_PUBLIC_SERVER_URL` | Hetzelfde openbare websiteadres. |
+| `MAPBOX_ACCESS_TOKEN` | Een publiek `pk.`-token, met de online oorsprong toegestaan bij eventuele URL-beperkingen. |
+
+`POSTGRES_PASSWORD` hoort bij de lokale Docker-database en hoeft niet naar Vercel. De bestaande SMTP-variabelen zijn nodig wanneer uitnodigingsmails en inlogcodes gebruikt gaan worden. Zet geheimen uitsluitend in de omgeving en nooit in Git of chatberichten. Nieuwe variabelen gelden na een nieuwe deployment.
+
+### Privé-opslag van afbeeldingen
+
+De officiële Blob-adapter voor de gebruikte Payload-versie 3.93.0 ondersteunt alleen publieke Blob-bestanden. De applicatie gebruikt daarom `src/lib/blob-storage.ts` met de officiële cloud-storage-plugin en `@vercel/blob`, expliciet met `access: 'private'`. Originelen en avatars staan onder `family-media/`; huisstijlbestanden onder `brand-assets/`. Er worden geen publieke Blob-URL’s aan het CMS of de website teruggegeven. De bestaande Payload-routes controleren de toegang tot familiefoto’s, ook bij directe links en ingetrokken accounts. De Blob wordt pas opgehaald nadat toegang en de bijbehorende databaseverwijzing zijn gecontroleerd. Antwoorden krijgen `private, no-store`. Logo’s blijven via hun eigen openbare Payload-route zichtbaar voor het inlogscherm, terwijl de achterliggende Blob eveneens privé is.
+
+Op Vercel geldt **4 MB per upload**, met ruimte voor formuliergegevens onder de 4,5 MB-verzoeklimiet. Dit geldt voor de CMS-uploadroute, het persoonsformulier en de verhaleneditor. Verkleinen, metadata verwijderen en avatars genereren gebeurt nog steeds op de server. Lokaal blijft de grens 10 MB. Een rechtstreekse browserupload voor grotere bestanden is geen onderdeel van deze koppeling.
+
+De plugin voegt in alle omgevingen dezelfde verborgen velden `prefix` en `_objectKey` toe. De migratie `20261124_155805_private_blob_storage` voegt hiervoor vier kolommen toe zonder bestaande bestandsnamen of fotokoppelingen te wijzigen. Zonder token blijft lokale opslag actief. Met een Blob-token wordt de lokale schijf niet gebruikt voor nieuwe uploads. Ontbreekt het token op Vercel, dan stopt de configuratie met een duidelijke foutmelding.
+
+### Bestaande familiegegevens overzetten
+
+Een nieuwe Neon-database en Blob store zijn leeg. Een Git-push of geslaagde build kopieert **geen** lokale familiegegevens of bestanden. Zet voor ingebruikname de gecontroleerde databaseback-up over naar de juiste productiedatabase, zorg dat de migratiehistorie bij het schema past, en kopieer de uploadbestanden naar de overeenkomstige private Blob-paden. Oude documenten zonder prefix/objectmap gebruiken `family-media/<bestandsnaam>` en `brand-assets/<bestandsnaam>`, inclusief de opgeslagen avatarbestandsnamen. Bewaar de bestaande verwijzingen en maak geen nieuwe fotodocumenten aan voor dezelfde bestanden. Controleer het aantal personen, relaties, verhalen en bestanden vóór en na overzetten. Een nieuwe, lege database heeft bovendien nog geen beheerder; het bestaande `admin:create`-script kan lokaal op de doelomgeving worden gericht, zonder registratie openbaar te maken.
+
+Gebruik voor Preview een aparte database en Blob store. Previewbuilds voeren bewust **geen** automatische migraties uit, zodat een gedeelde productiedatabase niet per ongeluk wordt gewijzigd. Bereid de previewdatabase afzonderlijk met dezelfde migraties voor en stel een passend, vast previewadres in voor de inlogformulieren. Productiegegevens en productietokens horen niet in ongecontroleerde previews.
+
+De opslagkoppeling is gecontroleerd met geïsoleerde PostgreSQL en een fictieve Blob-backend: verwerkte foto plus avatar, geen bronmetadata, directe toegangscontrole, onmiddellijke intrekking, openbare logo-route, ontbrekende bestanden, verwijdering en de 4 MB-grens. Voor deze controle:
+
+```sh
+# Alleen een wegwerpdatabase op 127.0.0.1:54330/blob_check wordt geaccepteerd.
+BLOB_CHECK_DATABASE_URL='postgresql://…@127.0.0.1:54330/blob_check' npx vitest run tests/blob-storage.integration.test.ts
+```
+
+Deze proef verstuurt geen familiefoto’s naar een echte Blob store. De werkelijke online upload/download moet na het koppelen en deployen nog worden gecontroleerd. De gewone `npm test` slaat deze databaseproef over wanneer de aparte testvariabele ontbreekt.
