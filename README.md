@@ -387,7 +387,31 @@ De plugin voegt in alle omgevingen dezelfde verborgen velden `prefix` en `_objec
 
 ### Bestaande familiegegevens overzetten
 
-Een nieuwe Neon-database en Blob store zijn leeg. Een Git-push of geslaagde build kopieert **geen** lokale familiegegevens of bestanden. Zet voor ingebruikname de gecontroleerde databaseback-up over naar de juiste productiedatabase, zorg dat de migratiehistorie bij het schema past, en kopieer de uploadbestanden naar de overeenkomstige private Blob-paden. Oude documenten zonder prefix/objectmap gebruiken `family-media/<bestandsnaam>` en `brand-assets/<bestandsnaam>`, inclusief de opgeslagen avatarbestandsnamen. Bewaar de bestaande verwijzingen en maak geen nieuwe fotodocumenten aan voor dezelfde bestanden. Controleer het aantal personen, relaties, verhalen en bestanden vóór en na overzetten. Een nieuwe, lege database heeft bovendien nog geen beheerder; het bestaande `admin:create`-script kan lokaal op de doelomgeving worden gericht, zonder registratie openbaar te maken.
+Een nieuwe Neon-database en Blob store zijn leeg. Een Git-push of geslaagde build kopieert **geen** lokale familiegegevens of bestanden. Voor de eenmalige overdracht van de huidige lokale database is `scripts/transfer-production.ts` beschikbaar. Dit script leest `.env` uitsluitend als lokale bron en een apart, niet bijgehouden bestand `.env.overdracht.local` als doel:
+
+```dotenv
+TRANSFER_DATABASE_URL=postgresql://…@….neon.tech/…?sslmode=require
+TRANSFER_BLOB_READ_WRITE_TOKEN=…
+TRANSFER_SITE_URL=https://www.familiezuurbier.nl
+```
+
+Gebruik de **directe** Neon-verbinding, zonder `-pooler` in de hostnaam, en het token van dezelfde privé-Blob store als in Vercel. Laat de gewone `.env` ongewijzigd. Deel deze verbindingswaarden niet in Git of chat. Het overdrachtsbestand krijgt alleen lees- en schrijfrechten voor de lokale gebruiker.
+
+```sh
+npm run transfer:prepare
+# Gebruik de mapnaam die de voorbereiding afdrukt:
+npm run transfer:plan -- --snapshot backups/overdracht-…
+npm run transfer:apply -- --snapshot backups/overdracht-…
+npm run transfer:verify -- --snapshot backups/overdracht-…
+```
+
+De voorbereiding maakt onder `backups/` een privé-controlekopie van de over te zetten tabellen en alle originele afbeeldingen en avatars, met aantallen en SHA-256-controlesommen. Deze kopie bevat persoonsgegevens en wachtwoordhashes en blijft buiten Git. De bron wordt alleen gelezen. Plan en uitvoering controleren het actuele schema, de productiemigratie, de identiteit van de website via de aanmaakdatum van de website-instellingen, lege familietabellen, ongewijzigde standaardinstellingen en een lege Blob store. Bij bestaande online inhoud stopt de overdracht; het is geen synchronisatie- of overschrijfprogramma.
+
+Vóór de import is een geslaagde, verse lokale databaseback-up verplicht. Afbeeldingen worden zonder overschrijven privé geplaatst en teruggelezen voor een bytecontrole. Daarna worden alle databasegegevens in één transactie geïmporteerd, met behoud van IDs, kindvolgorde, fotoverwijzingen, verhalen en CMS-instellingen. Bestaande beheerders kunnen hun wachtwoord blijven gebruiken. Sessies, inlogcodes, uitnodigingsgeheimen en wachtwoordhersteltokens worden niet gekopieerd; bij bestaande uitgenodigde familieaccounts is een nieuwe uitnodiging nodig. De productieomgeving behoudt haar eigen migratiehistorie. Media-URL’s verwijzen naar de eigen Payload-bestandsroutes.
+
+Bij een fout vóór de databasebevestiging wordt de transactie teruggedraaid en worden uitsluitend de door deze overdracht succesvol geplaatste bestanden voor opruiming aangeboden. Bij een **onzekere databasebevestiging blijven bestanden staan**: voer eerst de nacontrole uit met dezelfde controlekopie, start geen nieuwe import en controleer het lokale voortgangsbestand. Ook wanneer opruimen mislukt, worden bestaande online bestanden nooit blind verwijderd. Bewaar de lokale herstelkopie totdat de online omgeving is gecontroleerd; verwijder daarna de online verbindingswaarden uit het tijdelijke overdrachtsbestand.
+
+De databaseoverdracht is beproefd met fictieve gegevens op een wegwerpdatabase: echte migraties, foto- en verhaalverwijzingen, kindvolgorde, behoud van het bestaande beheerderswachtwoord en terugdraaien van zowel rijen als ID-volgordes. Voor die proef wordt alleen `TRANSFER_CHECK_DATABASE_URL` op `127.0.0.1:54330/transfer_check` geaccepteerd; de gewone `npm test` slaat de proef zonder die variabele over.
 
 Gebruik voor Preview een aparte database en Blob store. Previewbuilds voeren bewust **geen** automatische migraties uit, zodat een gedeelde productiedatabase niet per ongeluk wordt gewijzigd. Bereid de previewdatabase afzonderlijk met dezelfde migraties voor en stel een passend, vast previewadres in voor de inlogformulieren. Productiegegevens en productietokens horen niet in ongecontroleerde previews.
 
