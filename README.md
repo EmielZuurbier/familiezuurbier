@@ -51,9 +51,11 @@ Docker Desktop moet draaien voor de database. De webserver luistert uitsluitend 
 
 ## Bediening
 
-Beweeg de muis **in de richting die je wilt bekijken**, zonder een knop ingedrukt te houden, overal in het stamboomvlak. Muis rechts → schema links; muis links → schema rechts; muis omhoog → schema omlaag; muis omlaag → schema omhoog. Het beeld stopt zodra de aanwijzer stilstaat.
+Klik en sleep om de stamboom te verplaatsen. Trackpad-scrollen werkt ook. De boom mag vrij door het veld bewegen, ook wanneer hij volledig in beeld past. De grens ligt op 16 schermpixels nadat de hele boom buiten beeld is geraakt. React Flow begrenst de beweging tijdens het slepen; loslaten centreert de boom niet opnieuw. De overzichtsknop haalt de volledige stamboom terug.
 
-De aanwijzer is begrensd gekoppeld aan de beschikbare schemaruimte. In beide indelingen blijft rondom tot 112 schermpixels witruimte staan, ook bij inzoomen; op kleine vlakken schaalt die marge mee. De basisgevoeligheid gebruikt een muisbereik tot 140 pixels binnen de rand. **Rustig, Normaal en Vlot** gebruiken respectievelijk 25%, 50% en 100% van die basisgevoeligheid: iedere volgende stand verplaatst het schema tweemaal zo ver bij dezelfde muisbeweging. Alle standen zijn lager dan voorheen. De rustige standen leggen bewust minder afstand per muisbeweging af; plaats de aanwijzer opnieuw in het vlak om verder te verkennen, of gebruik slepen en zoomen. Binnenkomen begint bij het huidige beeld, ook als de muis al in de buitenmarge staat; zoeken, knoppen en opnieuw binnenkomen zetten het startpunt opnieuw. Per muisinteractie geldt één vaste verhouding per richtingas: gelijke muisafstanden geven overal dezelfde verplaatsing, ook door het midden en bij omkeren. Er is geen versnelling, vertraging of naloop. Snelle muisgebeurtenissen worden opgeteld voordat het volgende beeldframe wordt getekend. Alleen de begrenzing stopt beweging aan de uiteinden; omkeren werkt daar direct. Een schema dat in een richting helemaal past, blijft in die richting gecentreerd.
+**Subtiele muisbeweging** is uitsluitend een decoratief diepte-effect. De drie sterkten **Zeer subtiel, Subtiel en Meer beweging** verschuiven het getekende schema maximaal 6, 12 of 20 schermpixels per as, onafhankelijk van zoom en stamboomgrootte. De echte camera blijft staan; herhaalde muisbeweging kan dus geen navigatie opbouwen. Binnenkomen begint zonder sprong. Selectie, gezinsfocus, slepen, trackpadgebruik en pauze stoppen het effect. Bij de systeemvoorkeur voor minder beweging wordt het effect niet getoond.
+
+**Toetsenbord:** bereik het veld met Tab of klik op de achtergrond. Pijltjestoetsen verplaatsen het veld in gelijke schermstappen; Shift gebruikt grotere stappen. Enter selecteert de dichtstbijzijnde kaart. Met een geselecteerde persoon gaan omhoog/omlaag naar een ouder/kind, ook in de opwaartse indeling. Links/rechts lopen door partners, broers, zussen en halfbroers/halfzussen in de getoonde volgorde; gezinsfocus gaat bij een volgende rij verder en blijft binnen het gezin. De toetsenbordfocus volgt de kaart. Escape sluit de selectie en brengt de focus terug naar het veld. Zoeken, dropdowns en andere invoervelden behouden hun eigen pijltjestoetsbediening.
 
 - Klik op een naam voor geboortegegevens, levensstatus, ouders, partners, kinderen en (half)broers of (half)zussen. Tijdens de selectie volgt het schema de muis niet. Klik nogmaals op dezelfde kaart om te deselecteren en het volgen te hervatten. Een eerdere handmatige pauze blijft behouden. Vanuit het paneel kun je verder klikken.
 - De onderdelen **Ouders** en **Kinderen** in de persoonsgegevens verschijnen alleen als er gekoppelde personen zijn.
@@ -268,7 +270,7 @@ Gebruik je een andere PostgreSQL-server, maak de dump dan met `pg_dump` tegen di
 
 - Next.js 16.4.6, React 19.3.1, TypeScript 6.0.3.
 - Payload en alle officiële Payload-pakketten 3.93.0, met PostgreSQL-adapter.
-- React Flow (`@xyflow/react`) 12.12.1; eigen generatie-/partnerindeling en muisnavigatie.
+- React Flow (`@xyflow/react`) 12.12.1; eigen generatie-/partnerindeling, sleep- en toetsenbordbediening.
 - PostgreSQL 17 via Docker; geen externe diensten of hosting.
 - `package-lock.json` legt de concrete installatie vast. De versies zijn tegen de officiële installatie-instructies én de peer dependencies van de geïnstalleerde pakketten gecontroleerd.
 
@@ -309,7 +311,7 @@ De pakketcontrole had na het vastzetten van DOMPurify 3.4.18 geen hoge of kritie
 | `src/components/FamilyTree.tsx`                     | Schema, zoeken, details en bediening                |
 | `src/app/(frontend)/globals.css`                    | Rustige vormgeving, desktop en telefoon             |
 | `src/lib/layout.ts`                                 | Posities uit ouderschap en partnergroepen           |
-| `src/lib/pan.ts`                                    | Begrensde tegengestelde muisnavigatie               |
+| `src/lib/pan.ts`                                    | Beeldgrenzen en subtiele muisbeweging               |
 | `src/lib/dates.ts`                                  | Onvolledige datums, weergave en afgeleide leeftijd  |
 | `src/collections/collections.ts`                    | Datamodel, controles en transactiebeveiliging       |
 | `src/collections/access.ts`                         | Lees- en schrijfrechten                             |
@@ -345,7 +347,7 @@ De migratie `20261118_123225_gebeurtenissen` voegt uitsluitend de gebeurtenissen
 - **Huisstijl:** kleuren met een kleurkiezer en codeveld, en lettertypen voor titels en tekst. Lora, DM Sans en het systeemlettertype zijn beschikbaar; de meegeleverde lettertypen worden lokaal geladen.
 - **Pagina’s & modules:** Stamboom, Kaart, Verjaardagen en Gebeurtenissen aan- of uitzetten, menunamen, korte menunamen, browsertitels, overzichtstitels, boventitels, introducties en afzonderlijke voorbeeldtitels. Gedeelde titels, de stamboomnotitie en de bewaartekst zijn hier ook aanpasbaar.
 - **Inloggen:** teksten voor inloggen, uitnodigen, codes en de afgeschermde toegangspagina; daarnaast de onderwerpen en introductie van uitnodigingsmails. De afzendernaam volgt de websitenaam. Codes, hun geldigheidsduur en de uitnodigingslink blijven automatisch beheerd.
-- **Instellingen:** beginindeling van de stamboom, muisbediening en snelheid, minimap, stamboomcijfers, kalenderexport, aanvankelijke kaartlagen en Google Tag Manager. Een persoonlijke keuze voor de stamboomindeling blijft behouden.
+- **Instellingen:** beginindeling van de stamboom, muisbeweging en sterkte, minimap, stamboomcijfers, kalenderexport, aanvankelijke kaartlagen en Google Tag Manager. Een persoonlijke keuze voor de stamboomindeling blijft behouden.
 - **Beheer:** welkomstteksten op het dashboard en CMS-inlogscherm en titels/introductie van familietoegang.
 
 Gebruik `{familienaam}` en `{websitenaam}` voor namen die automatisch moeten meeveranderen. Het code-inlogscherm ondersteunt ook `{email}`. Teksten worden als tekst weergegeven. Na opslaan zijn wijzigingen beschikbaar bij het volgende openen of verversen van een pagina; er is geen nieuwe build nodig. Een uitgeschakelde module verdwijnt uit het menu en de directe route is niet beschikbaar. Als de stamboom uit staat, gaat de startpagina naar de eerste actieve module. Ten minste één module moet aan blijven. Deze schakelaars beheren de websiteweergaven; bestaande CMS-inhoud blijft behouden en bewerkbaar.

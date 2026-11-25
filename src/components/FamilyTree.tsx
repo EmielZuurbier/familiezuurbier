@@ -1,5 +1,13 @@
 'use client'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react'
 import Link from 'next/link'
 import {
   Background,
@@ -70,11 +78,13 @@ import { eventHref, eventsForPerson } from '@/lib/events/timeline'
 import { childOrder } from '@/lib/child-order'
 import {
   constrainViewport,
-  panViewport,
-  PAN_SPEEDS,
-  type PanAnchor,
-  type Viewport,
+  navigationExtent,
+  parallaxOffset,
+  MOUSE_AMPLITUDES,
+  type ParallaxAnchor,
+  type Point,
 } from '@/lib/pan'
+import { isArrowKey, keyboardViewport, nearestPerson, relatedPerson } from '@/lib/tree-keyboard'
 import type { Family, Person } from '@/lib/types'
 import { WorkspaceHeader } from './WorkspaceHeader'
 import { LifeStatusIcon } from './LifeStatusIcon'
@@ -119,6 +129,7 @@ function PersonCard({ data }: NodeProps<TreeNode>) {
         }}
         aria-label={`Bekijk ${data.person.name}`}
         aria-pressed={data.active}
+        data-person-id={data.person.id}
         tabIndex={data.outsideFamily ? -1 : 0}
         aria-describedby={data.person.lifeStatus === 'deceased' ? statusDescriptionId : undefined}
       >
@@ -176,11 +187,13 @@ function TreeView({
   const [query, setQuery] = useState(''),
     [selected, setSelected] = useState<string | null>(null)
   const [focusedFamily, setFocusedFamily] = useState<FamilyFocus | null>(null)
+  const [keyboardSelection, setKeyboardSelection] = useState(false)
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
   const [compactCanvas, setCompactCanvas] = useState(false)
   const [minimumZoom, setMinimumZoom] = useState(0.16)
   const [panEnabled, setPanEnabled] = useState(settings.options.mouseExploration),
     [speed, setSpeed] = useState<number>(
-      PAN_SPEEDS[settings.options.mouseSpeed as keyof typeof PAN_SPEEDS],
+      MOUSE_AMPLITUDES[settings.options.mouseSpeed as keyof typeof MOUSE_AMPLITUDES],
     ),
     [help, setHelp] = useState(false),
     [zoom, setZoom] = useState(1)
@@ -188,9 +201,10 @@ function TreeView({
   const canvasSizeRef = useRef<{ width: number; height: number } | null>(null)
   const focusExitRef = useRef<HTMLButtonElement>(null)
   const focusPending = useRef(false)
-  const panAnchor = useRef<PanAnchor | null>(null),
+  const instructionsId = useId()
+  const panAnchor = useRef<ParallaxAnchor | null>(null),
     wheelUntil = useRef(0),
-    pending = useRef<Viewport | null>(null),
+    pending = useRef<Point | null>(null),
     frame = useRef<number | null>(null)
   const basePlacements = useMemo(
     () =>
@@ -219,6 +233,8 @@ function TreeView({
     pending.current = null
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     frame.current = null
+    canvasRef.current?.style.setProperty('--tree-drift-x', '0px')
+    canvasRef.current?.style.setProperty('--tree-drift-y', '0px')
   }, [])
   const previousStyle = useRef(treeStyle)
   useEffect(() => {
@@ -262,6 +278,14 @@ function TreeView({
   const diagramBounds = useMemo(
     () => placementBounds(placements, growsUpwards ? UPWARD_BOTTOM_PADDING : 0),
     [placements, growsUpwards],
+  )
+  const navigationBounds = useMemo(() => placementBounds(placements), [placements])
+  const translateExtent = useMemo(
+    () =>
+      canvasSize.width && canvasSize.height
+        ? navigationExtent(navigationBounds, canvasSize, zoom)
+        : undefined,
+    [navigationBounds, canvasSize, zoom],
   )
   const focusStem = useCallback(
     (animate = true) => {
@@ -322,8 +346,9 @@ function TreeView({
     [basePlacements, flow, growsUpwards, stopPan],
   )
   const selectPerson = useCallback(
-    (id: string) => {
+    (id: string, fromKeyboard = false) => {
       stopPan()
+      setKeyboardSelection(fromKeyboard)
       if (id === selected) {
         if (focusedFamily) focusFamily(focusedFamily)
         else setSelected(null)
@@ -355,7 +380,7 @@ function TreeView({
                       (window.matchMedia('(max-width:760px)').matches ? 0.45 : 1),
                   },
                 ),
-                { duration: 350 },
+                { duration: fromKeyboard ? 120 : 350 },
               )
               .finally(() => {
                 focusPending.current = false
@@ -375,10 +400,10 @@ function TreeView({
         canvas.clientHeight *
         (selected && window.matchMedia('(max-width:760px)').matches ? 0.45 : 1),
     }
-    void flow.setViewport(constrainViewport(flow.getViewport(), diagramBounds, size), {
+    void flow.setViewport(constrainViewport(flow.getViewport(), navigationBounds, size), {
       duration: 0,
     })
-  }, [flow, diagramBounds, selected, stopPan])
+  }, [flow, navigationBounds, selected, stopPan])
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -387,6 +412,7 @@ function TreeView({
       const size = { width: canvas.clientWidth, height: canvas.clientHeight }
       const previous = canvasSizeRef.current
       canvasSizeRef.current = size
+      if (previous?.width !== size.width || previous?.height !== size.height) setCanvasSize(size)
       // Re-subscribing after a focus change is not a resize. Preserve the camera.
       if (
         (previous?.width === size.width && previous.height === size.height) ||
@@ -538,6 +564,66 @@ function TreeView({
       })
     })
   }, [flow, stopPan])
+  useEffect(() => {
+    if (!keyboardSelection || !selected) return
+    const frame = requestAnimationFrame(() => {
+      canvasRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-person-id="${CSS.escape(selected)}"]`)
+        ?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [keyboardSelection, selected])
+  function treeKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const target = event.target
+    if (
+      !(target instanceof HTMLElement) ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      help ||
+      target.closest(
+        'input,textarea,select,[contenteditable="true"],[role="textbox"],[data-pan-exempt],.react-flow__minimap',
+      )
+    )
+      return
+    if (!target.closest('.canvas,.detail-panel')) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    if (isArrowKey(event.key)) {
+      event.preventDefault()
+      event.stopPropagation()
+      stopPan()
+      if (selected) {
+        const next = relatedPerson(
+          family,
+          placements,
+          selected,
+          event.key,
+          focusedFamily ? focusedIds : undefined,
+          !!focusedFamily,
+        )
+        if (next) selectPerson(next, true)
+      } else {
+        void flow.setViewport(
+          constrainViewport(
+            keyboardViewport(flow.getViewport(), event.key, event.shiftKey),
+            navigationBounds,
+            { width: canvas.clientWidth, height: canvas.clientHeight },
+          ),
+          { duration: 0 },
+        )
+      }
+    } else if (event.key === 'Enter' && !selected && target === canvas) {
+      event.preventDefault()
+      const next = nearestPerson(
+        placements,
+        flow.getViewport(),
+        { width: canvas.clientWidth, height: canvas.clientHeight },
+        focusedFamily ? focusedIds : undefined,
+      )
+      if (next) selectPerson(next, true)
+    }
+  }
   useEffect(() => () => stopPan(), [stopPan])
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -547,6 +633,7 @@ function TreeView({
         setSelected(null)
         setHelp(false)
         stopPan()
+        if (!help) canvasRef.current?.focus({ preventScroll: true })
       }
       if (
         event.code === 'Space' &&
@@ -702,14 +789,24 @@ function TreeView({
         </div>
         <div
           className={`tree-stage ${person ? 'has-detail' : ''} ${focusedFamily ? 'has-family-focus' : ''}`}
+          onKeyDown={treeKeyDown}
         >
+          <p id={instructionsId} className="sr-only">
+            Pijltjestoetsen verplaatsen het veld. Shift verplaatst sneller. Enter selecteert de
+            dichtstbijzijnde persoon. Bij selectie: omhoog naar een ouder, omlaag naar een kind,
+            links en rechts naar broers, zussen of partners. Escape sluit de selectie.
+          </p>
           <div
             ref={canvasRef}
             className="canvas"
             data-testid="tree-canvas"
+            tabIndex={0}
+            role="region"
+            aria-label="Stamboom verkennen"
+            aria-describedby={instructionsId}
             onPointerMoveCapture={(e) => {
               const rect = e.currentTarget.getBoundingClientRect()
-              const next = panViewport(
+              const next = parallaxOffset(
                 panAnchor.current,
                 {
                   point: { x: e.clientX - rect.left, y: e.clientY - rect.top },
@@ -722,8 +819,6 @@ function TreeView({
                   now: performance.now(),
                   wheelUntil: wheelUntil.current,
                 },
-                flow.getViewport(),
-                diagramBounds,
                 {
                   width: rect.width,
                   height:
@@ -737,18 +832,27 @@ function TreeView({
                 stopPan()
                 return
               }
-              if (!next.viewport) return
-              pending.current = next.viewport
+              pending.current = next.offset
               if (frame.current === null)
                 frame.current = requestAnimationFrame(() => {
                   frame.current = null
                   const target = pending.current
                   pending.current = null
-                  if (target) void flow.setViewport(target, { duration: 0 })
+                  if (target) {
+                    canvasRef.current?.style.setProperty('--tree-drift-x', `${target.x}px`)
+                    canvasRef.current?.style.setProperty('--tree-drift-y', `${target.y}px`)
+                  }
                 })
             }}
             onPointerLeave={stopPan}
-            onPointerDownCapture={stopPan}
+            onPointerDownCapture={(event) => {
+              stopPan()
+              if (
+                event.target instanceof Element &&
+                !event.target.closest('button,input,select,a,[data-pan-exempt]')
+              )
+                event.currentTarget.focus({ preventScroll: true })
+            }}
             onWheelCapture={() => {
               stopPan()
               wheelUntil.current = performance.now() + 250
@@ -766,6 +870,8 @@ function TreeView({
               edgesFocusable={false}
               nodesFocusable={false}
               panOnDrag
+              translateExtent={translateExtent}
+              panActivationKeyCode={null}
               zoomOnScroll={false}
               panOnScroll
               zoomOnPinch
@@ -776,8 +882,8 @@ function TreeView({
               onInit={growsUpwards ? () => focusStem(false) : undefined}
               fitViewOptions={{ padding: 0.12, minZoom: 0.65, maxZoom: 1 }}
               onMove={(_, v) => setZoom(v.zoom)}
-              onMoveEnd={(event) => {
-                if (event) keepInBounds()
+              onMoveStart={(event) => {
+                if (event) stopPan()
               }}
               deleteKeyCode={null}
               aria-label="Stamboomschema met personen en familieverbindingen"
@@ -905,21 +1011,21 @@ function TreeView({
                     : selected
                       ? 'Gepauzeerd bij selectie'
                       : panEnabled
-                        ? 'Muis verkent mee'
+                        ? 'Subtiele muisbeweging'
                         : 'Muis gepauzeerd'}
                 </span>
               </button>
               <select
-                aria-label="Snelheid van muisbeweging"
+                aria-label="Sterkte van muisbeweging"
                 value={speed}
                 onChange={(e) => {
                   stopPan()
                   setSpeed(Number(e.target.value))
                 }}
               >
-                <option value={PAN_SPEEDS.slow}>Rustig</option>
-                <option value={PAN_SPEEDS.normal}>Normaal</option>
-                <option value={PAN_SPEEDS.fast}>Vlot</option>
+                <option value={MOUSE_AMPLITUDES.slow}>Zeer subtiel</option>
+                <option value={MOUSE_AMPLITUDES.normal}>Subtiel</option>
+                <option value={MOUSE_AMPLITUDES.fast}>Meer beweging</option>
               </select>
             </div>
           </div>
@@ -935,10 +1041,16 @@ function TreeView({
               <MousePointer2 size={23} />
               <h3>Op je eigen tempo ontdekken</h3>
               <p>
-                <strong>Met de muis:</strong> beweeg in de richting die je wilt bekijken, ook midden
-                in het schema. Naar rechts bewegen schuift het schema naar links. Naar beneden
-                bewegen schuift het schema omhoog. Er hoeft geen knop ingedrukt te zijn. Stilhouden
-                stopt het beeld direct.
+                <strong>Met de muis:</strong> klik en sleep om de stamboom te verplaatsen. Je kunt
+                de boom tot net buiten beeld schuiven; de overzichtsknop haalt hem terug. Losse
+                muisbeweging geeft alleen een subtiel diepte-effect van enkele pixels.
+              </p>
+              <p>
+                <strong>Met het toetsenbord:</strong> klik op het veld of bereik het met Tab.
+                Gebruik de pijltjestoetsen om te verplaatsen, met Shift voor grotere stappen. Enter
+                selecteert de dichtstbijzijnde persoon. Bij een geselecteerde persoon ga je omhoog
+                naar een ouder, omlaag naar een kind en links of rechts naar broers, zussen of
+                partners. Dit volgt de familiebanden in beide indelingen. Escape sluit de selectie.
               </p>
               <p>
                 Klik op een naam voor meer informatie. Zolang een kaart geselecteerd is, volgt het
@@ -966,6 +1078,7 @@ function TreeView({
               family={family}
               demo={demo}
               onSelect={selectPerson}
+              focusOnOpen={!keyboardSelection}
               eventsBase={persistent ? '/' : preview ? '/voorvertoning' : '/voorbeeld'}
               onFocusFamily={focusFamily}
               onClose={() => {
@@ -988,7 +1101,7 @@ function TreeView({
             </span>
           </div>
           <span className="desktop-instruction">
-            <MousePointer2 size={13} /> Beweeg je muis om te ontdekken · klik op een naam
+            <MousePointer2 size={13} /> Sleep of gebruik de pijltjestoetsen · klik op een naam
           </span>
           <span className="touch-instruction">Veeg om te verplaatsen · knijp om te zoomen</span>
         </footer>
@@ -1003,6 +1116,7 @@ export function PersonDetail({
   onSelect,
   onClose,
   onFocusFamily,
+  focusOnOpen = true,
   eventsBase = '/',
   onEventSelect,
 }: {
@@ -1014,12 +1128,13 @@ export function PersonDetail({
   onEventSelect?: (id: string) => void
   eventsBase?: string
   onFocusFamily?: (group: FamilyFocus) => void
+  focusOnOpen?: boolean
 }) {
   const settings = useSiteSettings()
   const headingRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true })
-  }, [])
+    if (focusOnOpen) headingRef.current?.focus({ preventScroll: true })
+  }, [focusOnOpen])
   const parents = family.parentages.filter((r) => r.child === person.id).map((r) => r.parent)
   const children = family.parentages
     .filter((r) => r.parent === person.id)

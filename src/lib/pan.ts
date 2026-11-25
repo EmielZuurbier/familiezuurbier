@@ -2,7 +2,9 @@ export type Point = { x: number; y: number }
 export type Viewport = Point & { zoom: number }
 export type CanvasSize = { width: number; height: number }
 export type Bounds = Point & CanvasSize
-export const PAN_SPEEDS = { slow: 0.25, normal: 0.5, fast: 1 } as const
+// Screen pixels, independent of tree size and zoom. Decoration, never navigation.
+export const MOUSE_AMPLITUDES = { slow: 6, normal: 12, fast: 20 } as const
+export const OFFSCREEN_MARGIN = 16
 export type PanSample = {
   point: Point
   pointerType: string
@@ -12,28 +14,18 @@ export type PanSample = {
   now: number
   wheelUntil: number
 }
-export type PanAnchor = {
-  point: Point
-  last: Point
-  viewport: Viewport
-  size: CanvasSize
-  target: Viewport
-  gain: Point
-  speed: number
-}
-// Screen-space breathing room remains useful at every zoom, in either layout.
-const viewPadding = (size: number) => Math.min(112, size / 5)
-const pointerPadding = (size: number) => Math.min(140, size / 4)
+export type ParallaxAnchor = { point: Point; size: CanvasSize; amplitude: number }
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 
+/** Stop only when the complete diagram is just outside the viewport. Small trees
+ * have the same freedom as large ones; releasing a drag never recentres. */
 export function constrainViewport(current: Viewport, bounds: Bounds, size: CanvasSize): Viewport {
-  const axis = (translation: number, start: number, length: number, size: number) => {
-    const padding = viewPadding(size)
-    if (length * current.zoom <= size - padding * 2)
-      return (size - length * current.zoom) / 2 - start * current.zoom
-    const near = padding - start * current.zoom,
-      far = size - padding - (start + length) * current.zoom
-    return Math.max(far, Math.min(near, translation))
-  }
+  const axis = (translation: number, start: number, length: number, size: number) =>
+    clamp(
+      translation,
+      -(start + length) * current.zoom - OFFSCREEN_MARGIN,
+      size - start * current.zoom + OFFSCREEN_MARGIN,
+    )
   return {
     ...current,
     x: axis(current.x, bounds.x, bounds.width, size.width),
@@ -41,72 +33,28 @@ export function constrainViewport(current: Viewport, bounds: Bounds, size: Canva
   }
 }
 
-function axisGain(
-  anchorPoint: number,
-  anchorTranslation: number,
-  start: number,
-  length: number,
-  size: number,
-  zoom: number,
-  speed: number,
-): number {
-  const padding = viewPadding(size)
-  if (length * zoom <= size - padding * 2) return 0
-  const near = padding - start * zoom
-  const far = size - padding - (start + length) * zoom
-  const inset = pointerPadding(size)
-  // The full-range baseline uses a pointer band inside the canvas border.
-  // Keep a short movement range when entering in that outer margin, so the
-  // first small movement cannot snap the view to an absolute endpoint.
-  const minimumTravel = Math.min(64, size / 6)
-  const toNear = Math.max(minimumTravel, anchorPoint - inset)
-  const toFar = Math.max(minimumTravel, size - inset - anchorPoint)
-  // Use the SAME gain in both directions for this entire interaction. The
-  // larger required distance defines the full-range baseline. Slower presets
-  // deliberately cover less distance per sweep; they never speed up near edges.
-  // Speed changes this constant, never the shape of the response curve.
-  return (
-    Math.max(
-      (near - far) / (size - inset * 2),
-      Math.max(0, near - anchorTranslation) / toNear,
-      Math.max(0, anchorTranslation - far) / toFar,
-    ) * Math.max(0.05, speed)
-  )
-}
-
-function axisPosition(
-  delta: number,
-  translation: number,
-  start: number,
-  length: number,
-  size: number,
-  zoom: number,
-  gain: number,
-): number {
-  const padding = viewPadding(size)
-  if (length * zoom <= size - padding * 2) return (size - length * zoom) / 2 - start * zoom
-  const near = padding - start * zoom
-  const far = size - padding - (start + length) * zoom
-  // Preserve a deliberately retained focus camera outside the normal bounds:
-  // move it back gradually instead of snapping on the first pointer movement.
-  return Math.max(
-    Math.min(far, translation),
-    Math.min(Math.max(near, translation), translation - delta * gain),
-  )
-}
-
-// Moving the pointer right/down explores right/down: the diagram moves left/up.
-// Re-anchor after entry, focus, buttons or wheel use, avoiding a jump to an absolute
-// page coordinate. A fixed gain keeps equal pointer steps equal across the field.
-// There is no timer, velocity or easing: a stationary pointer cannot move the view.
-export function panViewport(
-  anchor: PanAnchor | null,
-  sample: PanSample,
-  current: Viewport,
+/** React Flow/D3 constrains gestures while they happen, rather than correcting
+ * the camera afterwards. One viewport outside each edge gives screen-space limits. */
+export function navigationExtent(
   bounds: Bounds,
   size: CanvasSize,
-  speed: number,
-): { anchor: PanAnchor | null; viewport: Viewport | null } {
+  zoom: number,
+): [[number, number], [number, number]] {
+  const x = (size.width + OFFSCREEN_MARGIN) / zoom,
+    y = (size.height + OFFSCREEN_MARGIN) / zoom
+  return [
+    [bounds.x - x, bounds.y - y],
+    [bounds.x + bounds.width + x, bounds.y + bounds.height + y],
+  ]
+}
+
+export function parallaxOffset(
+  anchor: ParallaxAnchor | null,
+  sample: PanSample,
+  size: CanvasSize,
+  amplitude: number,
+): { anchor: ParallaxAnchor | null; offset: Point } {
+  const zero = { x: 0, y: 0 }
   if (
     !sample.enabled ||
     sample.exempt ||
@@ -116,71 +64,27 @@ export function panViewport(
     size.width <= 0 ||
     size.height <= 0
   )
-    return { anchor: null, viewport: null }
+    return { anchor: null, offset: zero }
   if (
     !anchor ||
-    anchor.viewport.zoom !== current.zoom ||
-    anchor.speed !== speed ||
+    anchor.amplitude !== amplitude ||
     anchor.size.width !== size.width ||
     anchor.size.height !== size.height
   )
-    return {
-      anchor: {
-        point: sample.point,
-        last: sample.point,
-        viewport: current,
-        target: current,
-        size,
-        speed,
-        gain: {
-          x: axisGain(
-            sample.point.x,
-            current.x,
-            bounds.x,
-            bounds.width,
-            size.width,
-            current.zoom,
-            speed,
-          ),
-          y: axisGain(
-            sample.point.y,
-            current.y,
-            bounds.y,
-            bounds.height,
-            size.height,
-            current.zoom,
-            speed,
-          ),
-        },
-      },
-      viewport: null,
-    }
-  if (anchor.last.x === sample.point.x && anchor.last.y === sample.point.y) {
-    return { anchor, viewport: null }
-  }
-  const viewport = {
-    x: axisPosition(
-      sample.point.x - anchor.last.x,
-      anchor.target.x,
-      bounds.x,
-      bounds.width,
-      size.width,
-      current.zoom,
-      anchor.gain.x,
-    ),
-    y: axisPosition(
-      sample.point.y - anchor.last.y,
-      anchor.target.y,
-      bounds.y,
-      bounds.height,
-      size.height,
-      current.zoom,
-      anchor.gain.y,
-    ),
-    zoom: current.zoom,
-  }
+    return { anchor: { point: sample.point, size, amplitude }, offset: zero }
   return {
-    anchor: { ...anchor, last: sample.point, target: viewport },
-    viewport,
+    anchor,
+    offset: {
+      x: clamp(
+        (-(sample.point.x - anchor.point.x) * 2 * amplitude) / size.width,
+        -amplitude,
+        amplitude,
+      ),
+      y: clamp(
+        (-(sample.point.y - anchor.point.y) * 2 * amplitude) / size.height,
+        -amplitude,
+        amplitude,
+      ),
+    },
   }
 }
