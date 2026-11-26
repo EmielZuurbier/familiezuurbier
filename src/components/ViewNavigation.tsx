@@ -1,8 +1,45 @@
 'use client'
-import Link from 'next/link'
-import { CalendarDays, GitBranch, MapPin, BookOpen } from 'lucide-react'
+import Link, { useLinkStatus } from 'next/link'
+import {
+  CalendarDays,
+  GitBranch,
+  MapPin,
+  BookOpen,
+  LoaderCircle,
+  type LucideIcon,
+} from 'lucide-react'
 import { useSiteSettings } from './SiteSettingsProvider'
 import { moduleKeys, siteText } from '@/lib/site-settings'
+
+function NavigationLabel({
+  icon: Icon,
+  label,
+  shortLabel,
+}: {
+  icon: LucideIcon
+  label: string
+  shortLabel: string
+}) {
+  const { pending } = useLinkStatus()
+  return (
+    <span
+      className={`view-link-content${pending ? ' is-pending' : ''}`}
+      aria-busy={pending || undefined}
+    >
+      <span className="view-link-icon" aria-hidden="true">
+        <Icon size={15} />
+        <LoaderCircle size={15} className="view-link-spinner" />
+      </span>
+      <span className="view-full-label">{label}</span>
+      <span className="view-short-label" aria-hidden="true">
+        {shortLabel}
+      </span>
+      <span className="sr-only" role="status">
+        {pending ? `${label} laden…` : ''}
+      </span>
+    </span>
+  )
+}
 
 export function ViewNavigation({
   active,
@@ -36,11 +73,11 @@ export function ViewNavigation({
               aria-current={active === key ? 'page' : undefined}
               aria-label={siteText(page.label, settings)}
             >
-              <Icon size={15} />
-              <span className="view-full-label">{siteText(page.label, settings)}</span>
-              <span className="view-short-label" aria-hidden="true">
-                {siteText(page.shortLabel, settings)}
-              </span>
+              <NavigationLabel
+                icon={Icon}
+                label={siteText(page.label, settings)}
+                shortLabel={siteText(page.shortLabel, settings)}
+              />
             </Link>
           )
         })}

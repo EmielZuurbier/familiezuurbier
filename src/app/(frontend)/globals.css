@@ -3166,3 +3166,339 @@ svg {
 .gate > .brand {
   margin-bottom: 35px;
 }
+
+/* Pending links keep their dimensions; only the icon changes while navigating. */
+.view-link-content {
+  display: contents;
+}
+.view-link-icon {
+  display: inline-flex;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+.view-link-icon .view-link-spinner {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+.is-pending .view-link-icon > svg:first-child {
+  opacity: 0;
+}
+.is-pending .view-link-spinner {
+  opacity: 1;
+  animation: view-loading-spin 0.8s linear infinite;
+}
+.view-navigation a:has(.is-pending) {
+  background: #e5eddf;
+  cursor: progress;
+}
+@keyframes view-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.view-loading-message {
+  flex: 1;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  padding: 24px;
+  text-align: center;
+}
+.view-loading-message > svg {
+  animation: view-loading-spin 0.8s linear infinite;
+  color: var(--green);
+}
+.view-loading-message p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.view-loading-standalone {
+  min-height: 100dvh;
+  display: flex;
+}
+.loading-search {
+  height: 40px;
+  border-radius: 7px;
+  background: var(--line);
+  opacity: 0.45;
+}
+.compact-toolbar,
+.compact-toolbar-content {
+  display: contents;
+}
+.compact-toolbar-toggle,
+.mobile-help-button {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-link-spinner,
+  .view-loading-message > svg {
+    animation: none !important;
+  }
+}
+
+/* Mobile chrome stays small; controls remain available on demand. */
+@media (max-width: 760px) {
+  .app-shell {
+    min-height: 360px;
+  }
+  .app-shell .sidebar {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 7px;
+    padding: max(6px, env(safe-area-inset-top)) 10px 6px;
+    min-height: 54px;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+  .app-shell .sidebar > .brand {
+    grid-row: 1;
+    grid-column: 1;
+    margin: 0;
+    padding: 0;
+  }
+  .app-shell .sidebar .brand-copy {
+    display: none;
+  }
+  .app-shell .sidebar .brand-icon {
+    width: 32px;
+    height: 34px;
+  }
+  .app-shell .sidebar .search-area {
+    grid-row: 1;
+    grid-column: 2;
+    min-width: 0;
+    margin: 0;
+  }
+  .app-shell .search-field {
+    height: 40px;
+    min-width: 0;
+    gap: 6px;
+    padding-inline: 9px;
+  }
+  .app-shell .search-field input {
+    font-size: 16px;
+  }
+  .app-shell .sidebar-bottom {
+    grid-row: 1;
+    grid-column: 3;
+    gap: 0;
+    border: 0;
+  }
+  .app-shell .sidebar-bottom > .admin-link + .admin-link {
+    margin-left: 0;
+  }
+  .app-shell .sidebar .admin-link,
+  .app-shell .sidebar .family-session-controls .admin-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    gap: 0;
+    font-size: 0;
+    min-width: 38px;
+    width: 38px;
+    min-height: 40px;
+  }
+  .app-shell .sidebar .admin-link svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .app-shell .sidebar .admin-link svg + svg {
+    display: none;
+  }
+  .app-shell .map-sidebar {
+    grid-template-columns: 32px minmax(0, 1fr) auto auto;
+    gap: 5px;
+  }
+  .app-shell .map-sidebar .map-list-toggle {
+    grid-row: 1;
+    grid-column: 3;
+    font-size: 0;
+    gap: 0;
+    padding: 0;
+    justify-content: center;
+    width: 36px;
+    height: 40px;
+  }
+  .app-shell .map-sidebar .map-list-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+  .app-shell .map-sidebar .map-sidebar-bottom {
+    display: flex;
+    grid-row: 1;
+    grid-column: 4;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .app-shell .map-sidebar .map-sidebar-bottom > p {
+    display: none;
+  }
+  .app-shell .workspace-header {
+    min-height: 54px;
+    padding: 4px 8px;
+    gap: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    position: relative;
+  }
+  .app-shell .workspace-header-info {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .app-shell .workspace-header-info .help-button {
+    display: none;
+  }
+  .app-shell .workspace-header > .view-navigation {
+    width: 100%;
+    justify-self: stretch;
+  }
+  .app-shell .view-navigation {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    padding: 2px;
+    gap: 2px;
+    border-radius: 9px;
+  }
+  .app-shell .view-navigation a {
+    min-width: 0;
+    min-height: 42px;
+    padding: 4px 2px;
+    gap: 2px;
+    flex-direction: column;
+    justify-content: center;
+    font-size: 10px;
+    line-height: 1.2;
+    border-radius: 6px;
+  }
+  .app-shell .view-navigation .view-full-label {
+    display: none;
+  }
+  .app-shell .view-navigation .view-short-label {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-shell .view-link-icon,
+  .app-shell .view-link-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+  .compact-toolbar {
+    display: block;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+  }
+  .compact-toolbar-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 7px 13px;
+    color: var(--green);
+    font-size: 11px;
+    text-align: left;
+  }
+  .compact-toolbar-toggle > span {
+    flex: 1;
+  }
+  .compact-toolbar-toggle[aria-expanded='true'] > svg:last-child {
+    transform: rotate(180deg);
+  }
+  .compact-toolbar-content {
+    display: none;
+  }
+  .compact-toolbar-content.is-open {
+    display: block;
+  }
+  .compact-toolbar .tree-layout-toolbar,
+  .compact-toolbar .birthday-toolbar,
+  .compact-toolbar .map-layer-filter {
+    border-bottom: 0;
+  }
+  .compact-toolbar .events-toolbar {
+    margin-bottom: 0;
+    padding: 10px;
+  }
+  .app-shell .mobile-help-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 12px;
+    margin: 0 12px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .app-shell .workspace-footer:not(.map-footer) {
+    display: none;
+  }
+  .app-shell .map-footer {
+    min-height: 24px;
+    padding: 4px 10px;
+    font-size: 9px;
+  }
+  .app-shell .pan-controls,
+  .app-shell .canvas-label {
+    display: none;
+  }
+  .app-shell .map-controls {
+    left: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .app-shell .stem-control {
+    left: 10px;
+    top: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 0;
+    padding: 9px;
+    gap: 0;
+  }
+  .app-shell .has-family-focus .stem-control {
+    top: auto;
+    bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+  .app-shell .canvas .react-flow__minimap.tree-minimap {
+    right: 8px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  .app-shell .tree-stage.has-detail .canvas .react-flow__minimap.tree-minimap {
+    bottom: calc(clamp(220px, 55%, 440px) + 8px);
+  }
+  .app-shell .family-focus-banner {
+    top: 10px;
+    left: 10px;
+    max-width: calc(100% - 20px);
+  }
+}

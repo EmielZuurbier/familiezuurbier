@@ -22,6 +22,7 @@ export default buildConfig({
     importMap: { baseDir: dirname },
     meta: { titleSuffix: ' | Beheer' },
     components: {
+      actions: ['./components/admin/AdminBrand#AdminFrontendLink'],
       beforeDashboard: ['./components/AdminWelcome#AdminWelcome'],
       beforeLogin: ['./components/admin/AdminBrand#AdminLoginWelcome'],
       beforeNavLinks: ['./components/admin/AdminBrand#AdminNavBrand'],

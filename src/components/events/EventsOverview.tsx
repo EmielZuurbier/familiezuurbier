@@ -21,6 +21,7 @@ import { SidebarHeading } from '../SidebarHeading'
 import { siteText } from '@/lib/site-settings'
 import { FamilyAccountControls, type FamilyViewer } from '../FamilyAccountControls'
 import { WorkspaceHeader } from '../WorkspaceHeader'
+import { CompactToolbar } from '../CompactToolbar'
 import { PersonDetail } from '../FamilyTree'
 import { PersonAvatar } from '../PersonAvatar'
 import { StoryContent } from './StoryContent'
@@ -221,58 +222,60 @@ export function EventsOverview({
                     Deze gebeurtenis is niet beschikbaar. Hieronder staan de andere verhalen.
                   </p>
                 )}
-                <div className="events-toolbar">
-                  <label>
-                    Jaar
-                    <select
-                      aria-label="Jaar"
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                    >
-                      <option value="all">Alle jaren</option>
-                      {years.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                      <option value="unknown">Zonder jaartal</option>
-                    </select>
-                  </label>
-                  <label>
-                    Betrokken persoon
-                    <select
-                      aria-label="Betrokken persoon"
-                      value={personFilter}
-                      onChange={(e) => setPersonFilter(e.target.value)}
-                    >
-                      <option value="all">Iedereen</option>
-                      {family.people
-                        .filter((person) =>
-                          events.some((event) => event.people.includes(person.id)),
-                        )
-                        .toSorted((a, b) => a.name.localeCompare(b.name, 'nl'))
-                        .map((person) => (
-                          <option value={person.id} key={person.id}>
-                            {person.name}
+                <CompactToolbar label="Verhalen filteren">
+                  <div className="events-toolbar">
+                    <label>
+                      Jaar
+                      <select
+                        aria-label="Jaar"
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                      >
+                        <option value="all">Alle jaren</option>
+                        {years.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
                           </option>
                         ))}
-                    </select>
-                  </label>
-                  {(year !== 'all' || personFilter !== 'all' || query) && (
-                    <button
-                      onClick={() => {
-                        setYear('all')
-                        setPersonFilter('all')
-                        setQuery('')
-                      }}
-                    >
-                      Filters wissen
-                    </button>
-                  )}
-                  <span role="status">
-                    {filtered.length} {filtered.length === 1 ? 'verhaal' : 'verhalen'}
-                  </span>
-                </div>
+                        <option value="unknown">Zonder jaartal</option>
+                      </select>
+                    </label>
+                    <label>
+                      Betrokken persoon
+                      <select
+                        aria-label="Betrokken persoon"
+                        value={personFilter}
+                        onChange={(e) => setPersonFilter(e.target.value)}
+                      >
+                        <option value="all">Iedereen</option>
+                        {family.people
+                          .filter((person) =>
+                            events.some((event) => event.people.includes(person.id)),
+                          )
+                          .toSorted((a, b) => a.name.localeCompare(b.name, 'nl'))
+                          .map((person) => (
+                            <option value={person.id} key={person.id}>
+                              {person.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    {(year !== 'all' || personFilter !== 'all' || query) && (
+                      <button
+                        onClick={() => {
+                          setYear('all')
+                          setPersonFilter('all')
+                          setQuery('')
+                        }}
+                      >
+                        Filters wissen
+                      </button>
+                    )}
+                    <span role="status">
+                      {filtered.length} {filtered.length === 1 ? 'verhaal' : 'verhalen'}
+                    </span>
+                  </div>
+                </CompactToolbar>
                 <div className="event-timeline">
                   {filtered.map((event, index) => (
                     <section className="event-timeline-item" key={event.id}>

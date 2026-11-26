@@ -19,6 +19,7 @@ import {
 } from '@/lib/residences'
 import { MapCanvas } from './MapCanvas'
 import { WorkspaceHeader } from './WorkspaceHeader'
+import { CompactToolbar } from './CompactToolbar'
 import { PersonAvatar } from './PersonAvatar'
 import { PersonDetail } from './FamilyTree'
 import { FamilyAccountControls, type FamilyViewer } from './FamilyAccountControls'
@@ -376,34 +377,38 @@ export function FamilyMap({
             <p>Alle personen en plaatskoppelingen in dit voorbeeld zijn fictief.</p>
           </div>
         )}
-        <fieldset className="map-layer-filter">
-          <legend>Kaartlagen</legend>
-          {mapLayers.map((layer) => (
-            <label key={layer.id} data-layer={layer.id}>
-              <input
-                type="checkbox"
-                checked={layers.includes(layer.id)}
-                onChange={(event) => {
-                  const enabled = event.target.checked
-                  setLayers((current) =>
-                    mapLayers
-                      .filter((item) =>
-                        item.id === layer.id ? enabled : current.includes(item.id),
-                      )
-                      .map((item) => item.id),
-                  )
-                  setFocused(null)
-                }}
-              />
-              <span
-                className="map-layer-swatch"
-                style={{ backgroundColor: layer.id === 'residence' ? 'var(--green)' : layer.color }}
-                aria-hidden="true"
-              />
-              {layer.label}
-            </label>
-          ))}
-        </fieldset>
+        <CompactToolbar label="Kaartlagen">
+          <fieldset className="map-layer-filter">
+            <legend>Kaartlagen</legend>
+            {mapLayers.map((layer) => (
+              <label key={layer.id} data-layer={layer.id}>
+                <input
+                  type="checkbox"
+                  checked={layers.includes(layer.id)}
+                  onChange={(event) => {
+                    const enabled = event.target.checked
+                    setLayers((current) =>
+                      mapLayers
+                        .filter((item) =>
+                          item.id === layer.id ? enabled : current.includes(item.id),
+                        )
+                        .map((item) => item.id),
+                    )
+                    setFocused(null)
+                  }}
+                />
+                <span
+                  className="map-layer-swatch"
+                  style={{
+                    backgroundColor: layer.id === 'residence' ? 'var(--green)' : layer.color,
+                  }}
+                  aria-hidden="true"
+                />
+                {layer.label}
+              </label>
+            ))}
+          </fieldset>
+        </CompactToolbar>
         <div className={`tree-stage map-stage ${person ? 'has-detail' : ''}`}>
           {token ? (
             <MapCanvas

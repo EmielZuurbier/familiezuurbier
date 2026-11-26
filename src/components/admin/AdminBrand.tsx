@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { GitBranch } from 'lucide-react'
+import { ArrowUpRight, GitBranch } from 'lucide-react'
 import { getSiteSettings } from '@/lib/get-site-settings'
 import { siteText } from '@/lib/site-settings'
 
@@ -53,6 +53,15 @@ export function AdminNavBrand() {
   return (
     <Link className="admin-nav-brand" href="/admin">
       <AdminLogo />
+    </Link>
+  )
+}
+export function AdminFrontendLink() {
+  return (
+    <Link className="admin-frontend-link" href="/" prefetch={false}>
+      <GitBranch size={16} aria-hidden="true" />
+      <span>Bekijk stamboom</span>
+      <ArrowUpRight size={14} aria-hidden="true" />
     </Link>
   )
 }

@@ -363,6 +363,8 @@ De gebeurteniskaartjes hebben geen knop-padding. Hun thumbnails hebben een vaste
 
 ## Deployen op Vercel
 
+De applicatiefuncties draaien in Frankfurt (`fra1` in `vercel.json`), dicht bij de Neon-database in dezelfde regio. Houd die regio's bij elkaar om onnodige netwerkwachttijd te voorkomen. De familiepagina's blijven per verzoek afgeschermd en op de server gerenderd. Bij wisselen van weergave verschijnt direct een laadindicator; tijdens het ophalen blijft een lichte navigatieschil zichtbaar. Op mobiel staan extra weergaveopties achter een uitklapknop, zodat de inhoud meer schermruimte krijgt.
+
 De repository bevat `vercel.json` met een eigen buildopdracht. Gebruik in Vercel **Framework: Next.js**, **Node.js: 24.x** en laat een eventueel handmatig ingestelde Build Command leeg zodat de opdracht uit de repository geldt. De toegestane Node-versie is begrensd op hoofdversie 24. De productiebuild controleert de vereiste variabelen en voert eerst Payload-migraties uit; daarna volgt de Next.js-build. Een mislukte migratie stopt de deployment. Voor een bestaande database die buiten de migraties om is ingericht, moeten migratiehistorie en schema eerst worden gecontroleerd; voer daar niet zomaar de initiële migratie op uit.
 
 Variabelen voor **Production**:

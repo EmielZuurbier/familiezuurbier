@@ -15,6 +15,7 @@ import { birthdayCalendar, birthdayMonths, type CalendarDay } from '@/lib/birthd
 import { formatDate } from '@/lib/dates'
 import { birthdayIcs } from '@/lib/birthday-ics'
 import { WorkspaceHeader } from './WorkspaceHeader'
+import { CompactToolbar } from './CompactToolbar'
 import { FamilyAccountControls, type FamilyViewer } from './FamilyAccountControls'
 import { LifeStatusIcon } from './LifeStatusIcon'
 import { PersonAvatar } from './PersonAvatar'
@@ -172,86 +173,88 @@ export function BirthdayCalendar({
             <p>Fictieve personen met verzonnen geboortedatums.</p>
           </div>
         )}
-        <div className="birthday-toolbar">
-          <div className="birthday-year">
-            <button
-              aria-label="Vorig kalenderjaar"
-              onClick={() => chooseYear(year - 1)}
-              disabled={year === 1}
-            >
-              <ChevronLeft size={17} />
-            </button>
-            <label>
-              <span>Kalenderjaar</span>
-              <input
-                type="number"
-                aria-label="Kalenderjaar"
-                min={1}
-                max={9999}
-                value={year}
-                onChange={(e) => chooseYear(Number(e.target.value))}
-              />
-            </label>
-            <button
-              aria-label="Volgend kalenderjaar"
-              onClick={() => chooseYear(year + 1)}
-              disabled={year === 9999}
-            >
-              <ChevronRight size={17} />
-            </button>
-          </div>
-          <label className="birthday-month-select">
-            Maand
-            <select
-              aria-label="Maand"
-              value={month ?? ''}
-              onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">Het hele jaar</option>
-              {birthdayMonths.map((name, i) => (
-                <option value={i + 1} key={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Toon
-            <select
-              aria-label="Familieleden filteren"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="all">Alle familieleden</option>
-              <option value="living">In leven</option>
-              <option value="deceased">Overleden</option>
-              <option value="unknown">Levensstatus onbekend</option>
-            </select>
-          </label>
-          {(year !== today.year || month !== null) && (
-            <button
-              className="birthday-reset"
-              onClick={() => {
-                setYear(today.year)
-                setMonth(null)
-              }}
-            >
-              Dit jaar
-            </button>
-          )}
-          {settings.options.calendarExport && (
-            <div className="birthday-export">
+        <CompactToolbar label={`Kalenderopties · ${year}`}>
+          <div className="birthday-toolbar">
+            <div className="birthday-year">
               <button
-                onClick={downloadBirthdays}
-                disabled={!exportCount}
-                aria-describedby="birthday-export-note"
+                aria-label="Vorig kalenderjaar"
+                onClick={() => chooseYear(year - 1)}
+                disabled={year === 1}
               >
-                <Download size={15} /> Download .ics <span>({exportCount})</span>
+                <ChevronLeft size={17} />
               </button>
-              <span id="birthday-export-note">Huidige selectie · jaarlijks herhaald</span>
+              <label>
+                <span>Kalenderjaar</span>
+                <input
+                  type="number"
+                  aria-label="Kalenderjaar"
+                  min={1}
+                  max={9999}
+                  value={year}
+                  onChange={(e) => chooseYear(Number(e.target.value))}
+                />
+              </label>
+              <button
+                aria-label="Volgend kalenderjaar"
+                onClick={() => chooseYear(year + 1)}
+                disabled={year === 9999}
+              >
+                <ChevronRight size={17} />
+              </button>
             </div>
-          )}
-        </div>
+            <label className="birthday-month-select">
+              Maand
+              <select
+                aria-label="Maand"
+                value={month ?? ''}
+                onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Het hele jaar</option>
+                {birthdayMonths.map((name, i) => (
+                  <option value={i + 1} key={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Toon
+              <select
+                aria-label="Familieleden filteren"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="all">Alle familieleden</option>
+                <option value="living">In leven</option>
+                <option value="deceased">Overleden</option>
+                <option value="unknown">Levensstatus onbekend</option>
+              </select>
+            </label>
+            {(year !== today.year || month !== null) && (
+              <button
+                className="birthday-reset"
+                onClick={() => {
+                  setYear(today.year)
+                  setMonth(null)
+                }}
+              >
+                Dit jaar
+              </button>
+            )}
+            {settings.options.calendarExport && (
+              <div className="birthday-export">
+                <button
+                  onClick={downloadBirthdays}
+                  disabled={!exportCount}
+                  aria-describedby="birthday-export-note"
+                >
+                  <Download size={15} /> Download .ics <span>({exportCount})</span>
+                </button>
+                <span id="birthday-export-note">Huidige selectie · jaarlijks herhaald</span>
+              </div>
+            )}
+          </div>
+        </CompactToolbar>
         <div className={`tree-stage birthday-stage ${person ? 'has-detail' : ''}`}>
           <div className="birthday-scroll">
             <p className="birthday-summary" role="status">

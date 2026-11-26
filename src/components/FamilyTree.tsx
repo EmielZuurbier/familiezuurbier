@@ -87,6 +87,7 @@ import {
 import { isArrowKey, keyboardViewport, nearestPerson, relatedPerson } from '@/lib/tree-keyboard'
 import type { Family, Person } from '@/lib/types'
 import { WorkspaceHeader } from './WorkspaceHeader'
+import { CompactToolbar } from './CompactToolbar'
 import { LifeStatusIcon } from './LifeStatusIcon'
 import { PersonAvatar, PersonPortrait } from './PersonAvatar'
 import { FamilyAccountControls, type FamilyViewer } from './FamilyAccountControls'
@@ -772,21 +773,26 @@ function TreeView({
             </span>
           </div>
         )}
-        <div className="tree-layout-toolbar">
-          <span>Indeling van de stamboom</span>
-          <div className="tree-style-toggle" role="group" aria-label="Indeling van de stamboom">
-            <button
-              type="button"
-              aria-pressed={!organic}
-              onClick={() => setTreeStyle('structured')}
-            >
-              <Network size={15} /> Overzichtelijk
-            </button>
-            <button type="button" aria-pressed={organic} onClick={() => setTreeStyle('organic')}>
-              <TreeDeciduous size={15} /> Vrije boom
-            </button>
+        <CompactToolbar label="Stamboomopties">
+          <div className="tree-layout-toolbar">
+            <span>Indeling van de stamboom</span>
+            <div className="tree-style-toggle" role="group" aria-label="Indeling van de stamboom">
+              <button
+                type="button"
+                aria-pressed={!organic}
+                onClick={() => setTreeStyle('structured')}
+              >
+                <Network size={15} /> Overzichtelijk
+              </button>
+              <button type="button" aria-pressed={organic} onClick={() => setTreeStyle('organic')}>
+                <TreeDeciduous size={15} /> Vrije boom
+              </button>
+            </div>
           </div>
-        </div>
+          <button className="mobile-help-button" onClick={() => setHelp(true)}>
+            <CircleHelp size={16} /> Uitleg over de bediening
+          </button>
+        </CompactToolbar>
         <div
           className={`tree-stage ${person ? 'has-detail' : ''} ${focusedFamily ? 'has-family-focus' : ''}`}
           onKeyDown={treeKeyDown}
