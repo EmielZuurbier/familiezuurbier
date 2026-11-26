@@ -27,7 +27,7 @@ process.env.FAMILY_APP_URL = 'http://127.0.0.1:3002'
 const { getPayload } = await import('payload'),
   { default: config } = await import('../src/payload.config')
 const payload = await getPayload({ config })
-const emails: { subject?: unknown; text?: unknown; to?: unknown }[] = []
+const emails: { subject?: unknown; text?: unknown; html?: unknown; to?: unknown }[] = []
 payload.sendEmail = async (message) => {
   emails.push(message)
   return { accepted: [] }
@@ -76,7 +76,13 @@ async function issue(email: string) {
   const ticket = await requestCode(payload, email, 'fictieve-testclient')
   check(!!ticket.deliver, 'Een actief account ontvangt een code.')
   await ticket.deliver!()
-  return codeFromEmail()
+  const code = codeFromEmail()
+  check(
+    String(emails.at(-1)?.html).includes(code) &&
+      String(emails.at(-1)?.html).includes('tien minuten'),
+    'De opgemaakte e-mail bevat dezelfde code en geldigheidsduur als de tekstversie.',
+  )
+  return code
 }
 try {
   check(
@@ -120,6 +126,11 @@ try {
   await inviteMember(payload, admin, 'Fictief familielid', ' Lid@Example.Invalid ')
   const token = inviteToken(),
     member = await memberByEmail('lid@example.invalid')
+  check(
+    String(emails.at(-1)?.html).includes(`#uitnodiging=${token}`) &&
+      String(emails.at(-1)?.html).includes('zeven dagen'),
+    'De opgemaakte uitnodiging bevat de werkende persoonlijke link en geldigheidsduur.',
+  )
   check(
     !(await requestCode(payload, member.email, 'test')).deliver,
     'Een nog niet geaccepteerde uitnodiging geeft geen inlogcode.',

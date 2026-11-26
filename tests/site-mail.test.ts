@@ -22,6 +22,7 @@ describe('E-mail met de ingestelde huisstijl', () => {
       to: 'familie@example.test',
       subject: 'Proef',
       text: 'Fictieve proef',
+      html: '<h1>Fictieve proef</h1>',
       from: 'Oude naam <oud@example.test>',
     })
     expect(mocks.send).toHaveBeenCalledWith(
@@ -30,6 +31,7 @@ describe('E-mail met de ingestelde huisstijl', () => {
         to: 'familie@example.test',
         subject: 'Proef',
         text: 'Fictieve proef',
+        html: '<h1>Fictieve proef</h1>',
       }),
     )
     expect(mocks.settings).toHaveBeenCalledWith({

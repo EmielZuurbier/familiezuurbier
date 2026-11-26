@@ -291,7 +291,7 @@ export const SiteSettings: GlobalConfig = {
               type: 'group',
               admin: {
                 description:
-                  'De afzendernaam volgt de websitenaam. De technische mailinstellingen blijven bij de serverinstellingen. De inlogcode, geldigheidsduur en uitnodigingslink worden automatisch toegevoegd.',
+                  'De e-mails volgen automatisch het logo, de websitenaam en de huisstijlkleuren. De technische mailinstellingen blijven bij de serverinstellingen. De inlogcode, geldigheidsduur en uitnodigingslink worden automatisch toegevoegd.',
               },
               fields: [
                 text('invitationSubject', 'Onderwerp uitnodiging', defaults.mail.invitationSubject),

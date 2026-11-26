@@ -1,4 +1,4 @@
-import { resolveSiteSettings, siteText } from '../site-settings'
+import { resolveSiteSettings } from '../site-settings'
 import {
   APIError,
   createLocalReq,
@@ -9,6 +9,7 @@ import {
 import type { PostgresAdapter } from '@payloadcms/db-postgres'
 import { sql } from '@payloadcms/db-postgres/drizzle'
 import { mailConfigured } from './mail'
+import { invitationEmail, loginCodeEmail } from './email-templates'
 import {
   appOrigin,
   CODE_LIFETIME,
@@ -162,12 +163,11 @@ export async function inviteMember(
   let sent = false
   try {
     const settings = resolveSiteSettings(
-      await payload.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: false }),
+      await payload.findGlobal({ slug: 'site-settings', depth: 1, overrideAccess: false }),
     )
     await payload.sendEmail({
       to: email,
-      subject: siteText(settings.mail.invitationSubject, settings),
-      text: `${siteText(settings.mail.invitationIntroduction, settings)}\n\nAccepteer de uitnodiging binnen zeven dagen:\n${invitationURL}\n\nDaarna log je in met een eenmalige code per e-mail. Je krijgt alleen kijkrechten.\n\nVerwachtte je deze uitnodiging niet? Dan kun je deze e-mail negeren.`,
+      ...invitationEmail({ settings, origin: appOrigin(), name, invitationURL }),
     })
     sent = true
   } finally {
@@ -279,12 +279,11 @@ export async function requestCode(payload: Payload, emailValue: unknown, ip: str
       ? async () => {
           try {
             const settings = resolveSiteSettings(
-              await payload.findGlobal({ slug: 'site-settings', depth: 0, overrideAccess: false }),
+              await payload.findGlobal({ slug: 'site-settings', depth: 1, overrideAccess: false }),
             )
             await payload.sendEmail({
               to: ticket.email,
-              subject: siteText(settings.mail.codeSubject, settings),
-              text: `Je eenmalige inlogcode is: ${ticket.code}\n\nDeze code is tien minuten geldig en kan één keer worden gebruikt. Deel de code niet.\n\nHeb je geen code aangevraagd? Dan kun je deze e-mail negeren.`,
+              ...loginCodeEmail({ settings, origin: appOrigin(), code: ticket.code }),
             })
           } catch {
             await atomic(payload, async (req) => {

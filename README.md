@@ -211,9 +211,11 @@ Tags, triggers en eventuele toestemming worden in de eigen GTM-container ingeric
 
 Er is geen openbare registratie. Uitnodigingen werken alleen voor het vastgelegde account. Een onbekend of ingetrokken e-mailadres krijgt bij een codeaanvraag dezelfde algemene melding, maar geen inlogcode. Familieaccounts kunnen geen andere accounts, sessiegegevens of inloggeheimen opvragen. Op de stamboom en kaart krijgen zij een knop **Uitloggen**; beheerlinks worden verborgen.
 
-### E-mail aansluiten — nog nodig voor echt gebruik
+### E-mail via Resend (SMTP)
 
-De volledige stroom is met fictieve accounts en lokale proefmail gecontroleerd. **Er is nog geen echte e-maildienst aangesloten.** Zonder die aansluiting zijn de verzendknoppen uitgeschakeld en tonen inlog- en beheerschermen wat nog ontbreekt. Er wordt geen succesvolle verzending voorgespiegeld en er worden geen codes in de console getoond.
+Productie verstuurt uitnodigingen en inlogcodes via Resend met de bestaande SMTP-aansluiting. Lokaal zijn de verzendknoppen uitgeschakeld wanneer de mailinstellingen ontbreken. Er wordt geen succesvolle verzending voorgespiegeld en er worden geen codes in de console getoond.
+
+Uitnodigingen en inlogcodes hebben een gedeelde HTML-opmaak in `src/lib/family-auth/email-templates.ts`, met daarnaast een gewone tekstversie. De opmaak volgt de actuele websitenaam, het logo, de kleuren en de lettertypekeuzes uit **Website-instellingen**. E-mail gebruikt Georgia/Arial als beschikbare vervangers voor de websitelettertypes. Zonder eigen logo verschijnt het stamboomicoon uit `public/email/`. De onderwerpen en de introductie van de uitnodiging blijven instelbaar onder **Inloggen → E-mailteksten**. De opmaak bevat geen trackingpixels, scripts of externe webfonts. De uitnodigingslink en de zescijferige code blijven ongewijzigd werken. Voor deze opmaak is geen apart Resend-template nodig.
 
 Vul de instellingen van de gekozen maildienst privé in `.env` in en herstart de app:
 
