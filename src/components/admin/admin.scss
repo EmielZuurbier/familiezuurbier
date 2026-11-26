@@ -111,7 +111,8 @@ html.family-admin {
   .collection-list .table {
     border-radius: 10px;
   }
-  .collection-list .list-header {
+  .collection-list .list-header,
+  .doc-header:has(+ .global-edit--site-settings) {
     padding-top: clamp(24px, 3vw, 40px);
   }
   .login {

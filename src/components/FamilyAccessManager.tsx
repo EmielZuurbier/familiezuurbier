@@ -59,11 +59,13 @@ export function FamilyAccessManager({
   return (
     <main className="family-access-page">
       <header>
-        <Link href="/admin">
-          <ArrowLeft size={15} />
-          Terug naar het beheer
-        </Link>
-        <FamilyBrand />
+        <div className="family-access-topbar">
+          <FamilyBrand />
+          <Link className="family-access-back" href="/admin">
+            <ArrowLeft size={15} aria-hidden="true" />
+            Terug naar het beheer
+          </Link>
+        </div>
         <span className="eyebrow">{siteText(settings.admin.accessEyebrow, settings)}</span>
         <h1>{siteText(settings.admin.accessTitle, settings)}</h1>
         <p>{siteText(settings.admin.accessDescription, settings)}</p>
