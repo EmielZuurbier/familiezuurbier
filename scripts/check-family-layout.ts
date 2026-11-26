@@ -6,7 +6,7 @@ import { effectiveParentages } from '../src/lib/relations'
 import { familyFocusOptions, familyFocusPlacements } from '../src/lib/family-focus'
 import type { Family } from '../src/lib/types'
 import { placementBounds } from '../src/lib/focus'
-import { organicParentagePaths } from '../src/lib/organic-connections'
+import { organicConnections } from '../src/lib/organic-connections'
 const payload = await getPayload({ config })
 try {
   const [people, parents, pairs] = await Promise.all([
@@ -60,9 +60,9 @@ try {
   const organic = layoutOrganicFamily(family),
     organicById = new Map(organic.map((p) => [p.id, p]))
   const connectionsStart = performance.now()
-  const organicPaths = organicParentagePaths(family, organic)
+  const organicPaths = organicConnections(family, organic)
   assert(
-    organicPaths.size === family.parentages.length,
+    new Set(organicPaths.flatMap((edge) => edge.relationIds)).size === family.parentages.length,
     'Alle echte ouder-kindverbindingen blijven zichtbaar.',
   )
   console.log(

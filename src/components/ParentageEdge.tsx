@@ -1,8 +1,10 @@
 'use client'
 import { BaseEdge, getBezierPath, type Edge, type EdgeProps } from '@xyflow/react'
+import { useMemo } from 'react'
 import { parentagePath } from '@/lib/connections'
+import { sampleEdge, taperedEdge } from '@/lib/edge-geometry'
 export type ParentageFlowEdge = Edge<
-  { junction?: { x: number; y: number }; path?: string },
+  { junction?: { x: number; y: number }; path?: string; taper?: boolean },
   'parentage'
 >
 export function ParentageEdge(props: EdgeProps<ParentageFlowEdge>) {
@@ -17,5 +19,18 @@ export function ParentageEdge(props: EdgeProps<ParentageFlowEdge>) {
           props.data.junction,
         )
       : getBezierPath(props)[0])
-  return <BaseEdge id={props.id} path={path} style={props.style} />
+  const outline = useMemo(
+    () => (props.data?.taper ? taperedEdge(sampleEdge(path)) : ''),
+    [path, props.data?.taper],
+  )
+  return outline ? (
+    <path
+      className="react-flow__edge-path organic-parentage-ribbon"
+      d={outline}
+      style={{ ...props.style, stroke: 'none', fill: props.style?.stroke ?? '#718d74' }}
+      aria-hidden="true"
+    />
+  ) : (
+    <BaseEdge id={props.id} path={path} style={props.style} />
+  )
 }

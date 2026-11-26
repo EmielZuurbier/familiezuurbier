@@ -31,6 +31,7 @@ import {
   ChevronRight,
   CircleHelp,
   GitBranch,
+  LoaderCircle,
   Network,
   TreeDeciduous,
   Focus,
@@ -70,7 +71,8 @@ import {
   type FamilyFocus,
 } from '@/lib/family-focus'
 import { partnershipDetour, parentageJunctions } from '@/lib/connections'
-import { organicParentagePaths } from '@/lib/organic-connections'
+import { OrganicEdge } from './OrganicEdge'
+import { useOrganicConnections } from './useOrganicConnections'
 import { ParentageEdge } from './ParentageEdge'
 import { PartnershipEdge } from './PartnershipEdge'
 import { age, formatDate, years } from '@/lib/dates'
@@ -152,7 +154,7 @@ function PersonCard({ data }: NodeProps<TreeNode>) {
   )
 }
 const nodeTypes = { person: PersonCard }
-const edgeTypes = { partnership: PartnershipEdge, parentage: ParentageEdge }
+const edgeTypes = { partnership: PartnershipEdge, parentage: ParentageEdge, organic: OrganicEdge }
 export function FamilyTree(props: {
   family: Family
   demo: boolean
@@ -467,12 +469,40 @@ function TreeView({
     () =>
       focusedFamily
         ? familyFocusParentagePaths(family, placements, focusedFamily, growsUpwards)
-        : organic
-          ? organicParentagePaths(family, placements)
-          : new Map<string, string>(),
-    [family, placements, focusedFamily, growsUpwards, organic],
+        : new Map<string, string>(),
+    [family, placements, focusedFamily, growsUpwards],
   )
-  const edges: Edge[] = useMemo(
+  const routingFamily = useMemo<Family>(
+    () =>
+      focusedFamily
+        ? {
+            people: family.people.filter((person) => focusedIds.has(person.id)),
+            parentages: family.parentages.filter(
+              (relation) =>
+                focusedFamily.parentIds.includes(relation.parent) &&
+                focusedFamily.childIds.includes(relation.child),
+            ),
+            partnerships: family.partnerships.filter(
+              (pair) =>
+                focusedFamily.parentIds.includes(pair.personA) &&
+                focusedFamily.parentIds.includes(pair.personB),
+            ),
+          }
+        : family,
+    [family, focusedFamily, focusedIds],
+  )
+  const routingPlacements = useMemo(
+    () =>
+      focusedFamily ? placements.filter((placement) => focusedIds.has(placement.id)) : placements,
+    [placements, focusedFamily, focusedIds],
+  )
+  const {
+    routes: organicRoutes,
+    pending: routingPending,
+    error: routingError,
+    retry: retryRouting,
+  } = useOrganicConnections(routingFamily, routingPlacements, organic)
+  const legacyEdges: Edge[] = useMemo(
     () => [
       ...family.parentages.map((r) => ({
         id: `parent-${r.id}`,
@@ -484,8 +514,12 @@ function TreeView({
         data: {
           junction: organic && !focusedFamily ? undefined : junctions.get(r.id),
           path: focusedPaths.get(r.id),
+          taper: organic,
         },
-        style: { stroke: organic ? '#718d74' : '#8b9f91', strokeWidth: organic ? 2.2 : 1.6 },
+        style: {
+          stroke: organic ? '#718d74' : '#8b9f91',
+          strokeWidth: organic ? 2.2 : 1.6,
+        },
         className:
           focusedFamily && !(focusedIds.has(r.parent) && focusedIds.has(r.child))
             ? 'outside-family'
@@ -519,6 +553,31 @@ function TreeView({
     ],
     [family, placements, growsUpwards, organic, junctions, focusedPaths, focusedFamily, focusedIds],
   )
+  const edges: Edge[] = useMemo(() => {
+    if (!organic) return legacyEdges
+    const context = focusedFamily
+      ? legacyEdges.filter((edge) => edge.className === 'outside-family')
+      : []
+    if (routingPending) return context
+    if (!organicRoutes) return legacyEdges
+    return [
+      ...context,
+      ...organicRoutes.map((route) => ({
+        id: route.id,
+        source: route.source,
+        target: route.target,
+        sourceHandle: route.kind === 'partnership' ? 'partner-right' : 'child',
+        targetHandle: route.kind === 'partnership' ? 'partner-left' : 'parent',
+        type: 'organic',
+        data: route,
+        style: {
+          stroke: route.kind === 'partnership' ? '#b89868' : '#718d74',
+          strokeWidth: 1.8,
+          strokeDasharray: route.ended ? '4 4' : undefined,
+        },
+      })),
+    ]
+  }, [organic, legacyEdges, focusedFamily, routingPending, organicRoutes])
   const person = family.people.find((p) => p.id === selected)
   const results = useMemo(() => {
     const q = query
@@ -864,6 +923,20 @@ function TreeView({
               wheelUntil.current = performance.now() + 250
             }}
           >
+            {(routingPending || routingError) && (
+              <div className="organic-routing-status" role="status">
+                {routingPending ? (
+                  <>
+                    <LoaderCircle size={14} aria-hidden="true" /> Verbindingen worden gelegd…
+                  </>
+                ) : (
+                  <>
+                    Verbindingen konden niet worden geordend.{' '}
+                    <button onClick={retryRouting}>Opnieuw proberen</button>
+                  </>
+                )}
+              </div>
+            )}
             <ReactFlow<TreeNode>
               nodes={nodes}
               edges={edges}

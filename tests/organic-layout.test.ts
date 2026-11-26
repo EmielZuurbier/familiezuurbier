@@ -9,7 +9,7 @@ import {
 import { childOrder } from '../src/lib/child-order'
 import type { Family } from '../src/lib/types'
 import { placementBounds } from '../src/lib/focus'
-import { organicParentagePaths } from '../src/lib/organic-connections'
+import { organicConnections } from '../src/lib/organic-connections'
 
 function largeFamily(): Family {
   const family: Family = { people: [], parentages: [], partnerships: [] }
@@ -54,55 +54,37 @@ function largeFamily(): Family {
 }
 
 describe('Vrije boom', () => {
-  it('leidt lange verbindingen rond kaarten in de tussenliggende takken', () => {
+  it('houdt alle gezinstakken, partnerlijnen en uitwijkroutes buiten de kaarten', () => {
     const family = largeFamily(),
       positions = layoutOrganicFamily(family)
-    const paths = organicParentagePaths(family, positions)
-    expect(paths.size).toBe(family.parentages.length)
-    expect([...paths.values()].some((path) => path.includes(' Q '))).toBe(true)
-    for (const r of family.parentages) {
-      let x = 0,
-        y = 0
-      for (const [, command, values] of paths.get(r.id)!.matchAll(/([MLQC])([^MLQC]+)/g)) {
-        const numbers = values.trim().split(/\s+/).map(Number)
-        if (command === 'M') {
-          ;[x, y] = numbers
-          continue
-        }
-        const [ex, ey] = numbers.slice(-2)
-        const steps = Math.ceil((Math.abs(ex - x) + Math.abs(ey - y)) / 8) + 8
-        for (let i = 1; i < steps; i++) {
-          const t = i / steps,
-            u = 1 - t
-          const px =
-            command === 'L'
-              ? x + (ex - x) * t
-              : command === 'Q'
-                ? u * u * x + 2 * u * t * numbers[0] + t * t * ex
-                : u * u * u * x +
-                  3 * u * u * t * numbers[0] +
-                  3 * u * t * t * numbers[2] +
-                  t * t * t * ex
-          const py =
-            command === 'L'
-              ? y + (ey - y) * t
-              : command === 'Q'
-                ? u * u * y + 2 * u * t * numbers[1] + t * t * ey
-                : u * u * u * y +
-                  3 * u * u * t * numbers[1] +
-                  3 * u * t * t * numbers[3] +
-                  t * t * t * ey
+    const edges = organicConnections(family, positions)
+    expect(new Set(edges.flatMap((e) => e.relationIds))).toEqual(
+      new Set(family.parentages.map((r) => r.id)),
+    )
+    expect(edges.filter((e) => e.kind === 'partnership')).toHaveLength(family.partnerships.length)
+    const collisions = new Set<string>()
+    for (const edge of edges) {
+      expect(edge.points.length).toBeGreaterThan(1)
+      expect(edge.path).not.toMatch(/NaN|Infinity/)
+      for (let i = 1; i < edge.points.length; i++) {
+        const a = edge.points[i - 1],
+          b = edge.points[i]
+        const steps = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 3)
+        for (let j = 0; j <= steps; j++) {
+          const x = a.x + ((b.x - a.x) * j) / steps,
+            y = a.y + ((b.y - a.y) * j) / steps
           for (const p of positions)
-            if (p.id !== r.parent && p.id !== r.child)
-              expect(
-                px > p.x && px < p.x + CARD_WIDTH && py > p.y && py < p.y + CARD_HEIGHT,
-                `${r.id} kruist ${p.id}`,
-              ).toBe(false)
+            if (
+              x > p.x + 0.01 &&
+              x < p.x + CARD_WIDTH - 0.01 &&
+              y > p.y + 0.01 &&
+              y < p.y + CARD_HEIGHT - 0.01
+            )
+              collisions.add(`${edge.id} kruist ${p.id}`)
         }
-        x = ex
-        y = ey
       }
     }
+    expect([...collisions]).toEqual([])
   })
   it('groeit omhoog met zichtbaar verspringende takken en houdt kaarten vrij', () => {
     for (const family of [demoFamily, largeFamily()]) {
@@ -194,12 +176,167 @@ describe('Vrije boom', () => {
     expect(layoutFamily(family)).toEqual(classic)
     expect(layoutOrganicFamily({ people: [], parentages: [], partnerships: [] })).toEqual([])
   })
+  it('tekent één stam uit het partnerschap en bewaart losse ouder-kindrelaties', () => {
+    const family = structuredClone(demoFamily)
+    family.parentages.push({ id: 'losse-ouder', parent: '1', child: '16' })
+    const positions = layoutOrganicFamily(family),
+      byId = new Map(positions.map((p) => [p.id, p]))
+    const edges = organicConnections(family, positions)
+    expect(new Set(edges.flatMap((edge) => edge.relationIds))).toEqual(
+      new Set(family.parentages.map((r) => r.id)),
+    )
+    const pair = family.partnerships[0],
+      group = edges.filter((e) => e.kind === 'parentage' && e.group === `pair:${pair.id}`)
+    const a = byId.get(pair.personA)!,
+      b = byId.get(pair.personB)!
+    const root = { x: (a.x + b.x + CARD_WIDTH) / 2, y: a.y + CARD_HEIGHT / 2 }
+    expect(
+      group.filter((e) => Math.hypot(e.points[0].x - root.x, e.points[0].y - root.y) < 0.01),
+    ).toHaveLength(1)
+    const loose = edges.filter((e) => e.relationIds.includes('losse-ouder'))
+    expect(loose.length).toBeGreaterThan(0)
+    expect(loose.every((e) => e.parentIds.length === 1 && e.parentIds[0] === '1')).toBe(true)
+    for (const edge of edges)
+      if (edge.kind === 'parentage') {
+        expect(edge.startWidth).toBeGreaterThan(edge.endWidth)
+        expect(edge.outline).toContain(' Z')
+      }
+  })
+  it('blijft deterministisch bij gewijzigde invoervolgorde en houdt partnerlijnen even dik', () => {
+    const positions = layoutOrganicFamily(demoFamily)
+    const edges = organicConnections(demoFamily, positions)
+    expect(
+      organicConnections(
+        {
+          ...demoFamily,
+          people: [...demoFamily.people].reverse(),
+          parentages: [...demoFamily.parentages].reverse(),
+          partnerships: [...demoFamily.partnerships].reverse(),
+        },
+        [...positions].reverse(),
+      ),
+    ).toEqual(edges)
+    for (const edge of edges.filter((e) => e.kind === 'partnership'))
+      expect(edge.startWidth).toBe(edge.endWidth)
+    expect(organicConnections({ people: [], parentages: [], partnerships: [] }, [])).toEqual([])
+  })
+  it('houdt meerdere partnerschappen en een losse ouder afzonderlijk herkenbaar', () => {
+    const family: Family = {
+      people: ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => ({
+        id,
+        name: '',
+        birth: {},
+        death: {},
+        lifeStatus: 'unknown',
+      })),
+      partnerships: [
+        { id: 'ab', personA: 'a', personB: 'b', status: 'ended', children: ['d', 'e'] },
+        { id: 'ac', personA: 'a', personB: 'c', status: 'current', children: ['f'] },
+      ],
+      parentages: [
+        ['a', 'd'],
+        ['b', 'd'],
+        ['a', 'e'],
+        ['b', 'e'],
+        ['a', 'f'],
+        ['c', 'f'],
+        ['a', 'g'],
+      ].map(([parent, child], i) => ({ id: String(i), parent, child })),
+    }
+    const positions = layoutOrganicFamily(family),
+      edges = organicConnections(family, positions)
+    expect(new Set(edges.flatMap((e) => e.relationIds))).toEqual(
+      new Set(family.parentages.map((r) => r.id)),
+    )
+    expect(
+      edges
+        .filter((e) => e.group === 'pair:ab' && e.kind === 'parentage')
+        .every((e) => e.parentIds.join(':') === 'a:b'),
+    ).toBe(true)
+    expect(
+      edges
+        .filter((e) => e.group === 'pair:ac' && e.kind === 'parentage')
+        .every((e) => e.parentIds.join(':') === 'a:c'),
+    ).toBe(true)
+    expect(edges.find((e) => e.group === 'pair:ab' && e.kind === 'partnership')?.ended).toBe(true)
+    expect(
+      edges.filter((e) => e.childIds.includes('g')).every((e) => e.parentIds.join(':') === 'a'),
+    ).toBe(true)
+    for (const edge of edges)
+      for (let i = 1; i < edge.points.length; i++) {
+        const a = edge.points[i - 1],
+          b = edge.points[i],
+          steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 3))
+        for (let j = 0; j <= steps; j++)
+          for (const card of positions) {
+            const x = a.x + ((b.x - a.x) * j) / steps,
+              y = a.y + ((b.y - a.y) * j) / steps
+            expect(
+              x > card.x + 0.01 &&
+                x < card.x + CARD_WIDTH - 0.01 &&
+                y > card.y + 0.01 &&
+                y < card.y + CARD_HEIGHT - 0.01,
+            ).toBe(false)
+          }
+      }
+  })
+  it('maakt bij een resterende kruising een echte onderbreking in de onderste lijn', () => {
+    const family: Family = {
+      people: ['a', 'b', 'c', 'd'].map((id) => ({
+        id,
+        name: '',
+        birth: {},
+        death: {},
+        lifeStatus: 'unknown',
+      })),
+      partnerships: [],
+      parentages: [
+        { id: 'ac', parent: 'a', child: 'c' },
+        { id: 'bd', parent: 'b', child: 'd' },
+      ],
+    }
+    const edges = organicConnections(family, [
+      { id: 'a', x: 0, y: 500, generation: 0 },
+      { id: 'b', x: 600, y: 500, generation: 0 },
+      { id: 'c', x: 600, y: 0, generation: 1 },
+      { id: 'd', x: 0, y: 0, generation: 1 },
+    ])
+    const interrupted = edges.filter((e) => e.gaps.length)
+    expect(interrupted.length).toBeGreaterThan(0)
+    for (const edge of interrupted) {
+      expect((edge.path.match(/M /g) ?? []).length).toBeGreaterThan(1)
+      expect((edge.outline.match(/ Z/g) ?? []).length).toBeGreaterThan(1)
+    }
+  })
   it('ondersteunt gezinsfocus met vier kaarten per rij en een passende camera', () => {
     const family = largeFamily(),
       group = familyFocusOptions(family, 'a')[0]
     const placements = familyFocusPlacements(layoutOrganicFamily(family), group, true)
     const ids = new Set([...group.parentIds, ...group.childIds])
     const focused = placements.filter((p) => ids.has(p.id))
+    const focusFamily: Family = {
+      people: family.people.filter((p) => ids.has(p.id)),
+      parentages: family.parentages.filter(
+        (r) => group.parentIds.includes(r.parent) && group.childIds.includes(r.child),
+      ),
+      partnerships: family.partnerships.filter(
+        (p) => group.parentIds.includes(p.personA) && group.parentIds.includes(p.personB),
+      ),
+    }
+    const routes = organicConnections(focusFamily, focused)
+    expect(new Set(routes.flatMap((r) => r.relationIds))).toEqual(
+      new Set(focusFamily.parentages.map((r) => r.id)),
+    )
+    expect(routes.filter((r) => r.kind === 'partnership')).toHaveLength(1)
+    for (const route of routes)
+      for (const point of route.points)
+        for (const card of focused)
+          expect(
+            point.x > card.x + 0.01 &&
+              point.x < card.x + CARD_WIDTH - 0.01 &&
+              point.y > card.y + 0.01 &&
+              point.y < card.y + CARD_HEIGHT - 0.01,
+          ).toBe(false)
     const children = focused
       .filter((p) => group.childIds.includes(p.id))
       .sort((a, b) => b.y - a.y || a.x - b.x)
