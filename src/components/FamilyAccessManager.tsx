@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSiteSettings } from './SiteSettingsProvider'
 import { siteText } from '@/lib/site-settings'
@@ -24,6 +24,7 @@ export function FamilyAccessManager({
 }) {
   const settings = useSiteSettings()
   const router = useRouter()
+  const fieldId = useId()
   const [name, setName] = useState(''),
     [email, setEmail] = useState(''),
     [busy, setBusy] = useState(false),
@@ -87,27 +88,33 @@ export function FamilyAccessManager({
             void action('invite', { name, email })
           }}
         >
-          <label>
-            Naam
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={120}
-              required
-              autoComplete="name"
-            />
-          </label>
-          <label>
-            E-mailadres
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              maxLength={254}
-              required
-              autoComplete="email"
-            />
-          </label>
+          <div className="invite-field">
+            <label htmlFor={`${fieldId}-name`}>Naam</label>
+            <div className="invite-input">
+              <input
+                id={`${fieldId}-name`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={120}
+                required
+                autoComplete="name"
+              />
+            </div>
+          </div>
+          <div className="invite-field">
+            <label htmlFor={`${fieldId}-email`}>E-mailadres</label>
+            <div className="invite-input">
+              <input
+                id={`${fieldId}-email`}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                maxLength={254}
+                required
+                autoComplete="email"
+              />
+            </div>
+          </div>
           <button className="primary" disabled={busy || !mailReady}>
             <Mail size={15} />
             Uitnodiging versturen

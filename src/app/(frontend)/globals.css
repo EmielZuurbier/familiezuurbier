@@ -2044,11 +2044,21 @@ svg {
   grid-template-columns: 1fr 1.3fr auto;
   align-items: end;
 }
-.invite-card form > label {
-  align-self: stretch;
-  justify-content: space-between;
-  margin: 0;
+.invite-field {
   min-width: 0;
+}
+.invite-field > label {
+  display: block;
+  margin: 0 0 8px;
+}
+.invite-input {
+  /* Autofill overlays stay outside the label spacing and cannot grow the input row. */
+  position: relative;
+  height: 46px;
+}
+.invite-input > input {
+  display: block;
+  height: 100%;
 }
 .canvas .react-flow__viewport {
   translate: var(--tree-drift-x, 0px) var(--tree-drift-y, 0px);
